@@ -18,3 +18,5 @@ export class GameData {
         return this.getSaveData("isPlayAudio", 1) === 1;
     }
 }
+
+// 测试子模块提交
