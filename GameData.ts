@@ -9,6 +9,7 @@ export class GameData {
         return JSON.parse(sys.localStorage.getItem(key) || defaultValue);
     }
 
+    //全局存储是否播放音效
     public static setVoiceState(isPlayAudio: boolean) {
         this.setSaveData("isPlayAudio", isPlayAudio ? 1 : 0);
     }
