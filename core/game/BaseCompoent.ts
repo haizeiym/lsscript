@@ -6,8 +6,8 @@ import { NCountFn, NTime } from "../NMgr";
 import { ResLoad } from "../ResMgr";
 const { ccclass, property } = _decorator;
 
-@ccclass("BaseCompoent")
-export class BaseCompoent extends Component {
+@ccclass("BaseComponent")
+export class BaseComponent extends Component {
     public MData: any = Object.create(null);
 
     private _bindUis: BindUI[] = [];
@@ -132,10 +132,10 @@ export class BaseCompoent extends Component {
 
     protected _start() {}
 
-    public static asyncCreate(BName: string, PPath: string, arg: unknown, mData?: any): Promise<BaseCompoent> {
+    public static asyncCreate(BName: string, PPath: string, arg: unknown, mData?: any): Promise<BaseComponent> {
         return Promise.resolve(
             ResLoad.prefab(BName, PPath).then((prefab) => {
-                const component = instantiate(prefab).getComponent(BaseCompoent);
+                const component = instantiate(prefab).getComponent(BaseComponent);
                 if (mData) {
                     component.MData = Object.assign(Object.create(null), component.MData, mData);
                 }
@@ -145,8 +145,8 @@ export class BaseCompoent extends Component {
         );
     }
 
-    public static syncCreate(prefab: Prefab, arg: unknown, mData?: any): BaseCompoent {
-        const component = instantiate(prefab).getComponent(BaseCompoent);
+    public static syncCreate(prefab: Prefab, arg: unknown, mData?: any): BaseComponent {
+        const component = instantiate(prefab).getComponent(BaseComponent);
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
