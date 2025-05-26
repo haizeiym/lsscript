@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, instantiate, Node, UIOpacity, UITransform } from "cc";
+import { _decorator, Button, Component, instantiate, Node, Prefab, UIOpacity, UITransform } from "cc";
 import { BindUI } from "../BindUI";
 import { Btn } from "../BtnMgr";
 import { Events } from "../EventMgr";
@@ -132,7 +132,7 @@ export class BaseCompoent extends Component {
 
     protected _start() {}
 
-    public static simpleShow(BName: string, PPath: string, arg: unknown, mData?: any): Promise<BaseCompoent> {
+    public static asyncCreate(BName: string, PPath: string, arg: unknown, mData?: any): Promise<BaseCompoent> {
         return Promise.resolve(
             ResLoad.prefab(BName, PPath).then((prefab) => {
                 const component = instantiate(prefab).getComponent(BaseCompoent);
@@ -143,5 +143,14 @@ export class BaseCompoent extends Component {
                 return component;
             })
         );
+    }
+
+    public static syncCreate(prefab: Prefab, arg: unknown, mData?: any): BaseCompoent {
+        const component = instantiate(prefab).getComponent(BaseCompoent);
+        if (mData) {
+            component.MData = Object.assign(Object.create(null), component.MData, mData);
+        }
+        component.setInit(arg);
+        return component;
     }
 }
