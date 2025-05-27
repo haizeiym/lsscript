@@ -95,7 +95,7 @@ export class BaseComponent extends Component {
         NTime.removeObjTime(this);
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
-        this.MData = null;
+        this.MData = Object.create(null);
         this.clearUI();
     }
 
