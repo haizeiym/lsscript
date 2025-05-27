@@ -91,10 +91,11 @@ export class BaseComponent extends Component {
         return countFn;
     }
 
-    protected resetComponent() {
+    public resetComponent() {
         NTime.removeObjTime(this);
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
+        this.node.targetOff(this);
         this.MData = Object.create(null);
         this.clearUI();
     }
@@ -145,8 +146,9 @@ export class BaseComponent extends Component {
         );
     }
 
-    public static syncCreate(prefab: Prefab, arg: unknown, mData?: any): BaseComponent {
-        const component = instantiate(prefab).getComponent(BaseComponent);
+    public static syncCreate(pn: Prefab | Node, arg: unknown, mData?: any): BaseComponent {
+        const node = pn instanceof Prefab ? instantiate(pn) : pn;
+        const component = node.getComponent(BaseComponent);
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
