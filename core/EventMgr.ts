@@ -56,7 +56,9 @@ export class Events {
         const list = this._eventData.events[eName];
         if (!list) return;
 
-        const newList = list.filter((item) => (target ? !(item.callback === callback && item.target === target) : item.callback !== callback));
+        const newList = list.filter((item) =>
+            target ? !(item.callback === callback && item.target === target) : item.callback !== callback
+        );
 
         if (newList.length === 0) {
             delete this._eventData.events[eName];
