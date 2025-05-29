@@ -82,7 +82,11 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
                 // 计算剩余超时时间
                 const remainingTimeout = Math.max(0, timeout - (Date.now() - startTime));
                 if (remainingTimeout <= 0) {
-                    throw new Error("Total request timeout exceeded");
+                    return {
+                        success: false,
+                        error: new Error("Total request timeout exceeded"),
+                        data: null
+                    };
                 }
 
                 timeoutId = setTimeout(() => {
@@ -105,11 +109,18 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
 
                 // 检查响应类型
                 const contentType = response.headers.get("content-type");
+                let data: any = null;
                 if (contentType && contentType.includes("application/json")) {
-                    return await response.json();
+                    data = await response.json();
                 } else {
-                    return await response.text();
+                    data = await response.text();
                 }
+
+                return {
+                    success: true,
+                    data,
+                    error: null
+                };
             } catch (error) {
                 // 清除定时器
                 clearTimeout(timeoutId);
@@ -131,7 +142,11 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
 
                 // 检查是否超过总超时时间
                 if (Date.now() - startTime >= timeout) {
-                    throw new Error("Total request timeout exceeded");
+                    return {
+                        success: false,
+                        error: new Error("Total request timeout exceeded"),
+                        data: null
+                    };
                 }
 
                 if (i < retries) {
@@ -140,6 +155,13 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
                 }
             }
         }
+
+        // 所有重试都失败后返回错误
+        return {
+            success: false,
+            error: lastError,
+            data: null
+        };
     } catch (error) {
         // 确保在最外层也清理资源
         clearTimeout(timeoutId);
@@ -152,7 +174,11 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
         if (methodControllers.size === 0) {
             activeControllers.delete(url);
         }
-        throw error;
+        return {
+            success: false,
+            error: error instanceof Error ? error : new Error(String(error)),
+            data: null
+        };
     } finally {
         // 清理资源
         clearTimeout(timeoutId);
@@ -166,14 +192,12 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
             activeControllers.delete(url);
         }
     }
-
-    throw lastError;
 }
 
 /**
  * GET请求
  */
-export async function get(url: string, options: RequestOptions = {}) {
+export async function httpGet(url: string, options: RequestOptions = {}) {
     return request(url, options, {
         method: "GET",
         headers: {
@@ -185,7 +209,7 @@ export async function get(url: string, options: RequestOptions = {}) {
 /**
  * POST请求
  */
-export async function post(url: string, data: any, options: RequestOptions = {}) {
+export async function httpPost(url: string, data: any, options: RequestOptions = {}) {
     return request(url, options, {
         method: "POST",
         headers: {
