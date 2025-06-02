@@ -31,36 +31,34 @@ export namespace ResLoad {
     };
 
     const res = <T extends Asset>(bName: string, resName: string, resType: typeof Asset): Promise<T> => {
-        return new Promise((resolve) => {
-            getBundle(bName).then((bundle) => {
-                bundle.load(resName, resType, null, (err: Error, data: T) => {
-                    if (err) {
-                        resolve(null);
-                    } else {
-                        resolve(data);
-                    }
-                });
+        return new Promise(async (resolve) => {
+            let bundle = await getBundle(bName);
+            bundle.load(resName, resType, null, (err: Error, data: T) => {
+                if (err) {
+                    resolve(null);
+                } else {
+                    resolve(data);
+                }
             });
         });
     };
 
     export const dir = <T extends Asset>(bName: string, resName: string, onProgress?: Function): Promise<T[]> => {
-        return new Promise((resolve) => {
-            getBundle(bName).then((bundle) => {
-                bundle.loadDir(
-                    resName,
-                    (finish: number, total: number, item: any) => {
-                        onProgress && onProgress(finish, total, item);
-                    },
-                    (err: Error, data: T[]) => {
-                        if (err) {
-                            resolve(null);
-                        } else {
-                            resolve(data);
-                        }
+        return new Promise(async (resolve) => {
+            let bundle = await getBundle(bName);
+            bundle.loadDir(
+                resName,
+                (finish: number, total: number, item: any) => {
+                    onProgress && onProgress(finish, total, item);
+                },
+                (err: Error, data: T[]) => {
+                    if (err) {
+                        resolve(null);
+                    } else {
+                        resolve(data);
                     }
-                );
-            });
+                }
+            );
         });
     };
 
