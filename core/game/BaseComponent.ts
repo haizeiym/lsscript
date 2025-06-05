@@ -100,8 +100,6 @@ export class BaseComponent extends Component {
         this.clearUI();
     }
 
-    protected onDestroy(): void {}
-
     public NodeDestroy() {
         if (!this.isValid) return;
         this._destroyBefore();
