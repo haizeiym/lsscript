@@ -62,6 +62,31 @@ export namespace ResLoad {
         });
     };
 
+    export const dirT = <T extends Asset>(
+        bName: string,
+        resName: string,
+        resType: new (...args: any[]) => T,
+        onProgress?: Function
+    ): Promise<T[]> => {
+        return new Promise(async (resolve) => {
+            let bundle = await getBundle(bName);
+            bundle.loadDir(
+                resName,
+                resType,
+                (finish: number, total: number, item: any) => {
+                    onProgress && onProgress(finish, total, item);
+                },
+                (err: Error, data: T[]) => {
+                    if (err) {
+                        resolve(null);
+                    } else {
+                        resolve(data);
+                    }
+                }
+            );
+        });
+    };
+
     export const atlas = (bName: string, pName: string): Promise<SpriteAtlas> => {
         return res(bName, pName, SpriteAtlas);
     };
