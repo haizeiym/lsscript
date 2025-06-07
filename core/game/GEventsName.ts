@@ -1,3 +1,5 @@
 export const GEventName = {
-    LangChange: "LangChange"
+    LangChange: "LangChange",
+    GameShow: "GameShow",
+    GameHide: "GameHide"
 };
