@@ -130,26 +130,35 @@ export class BaseComponent extends Component {
 
     protected _start() {}
 
-    public static asyncCreate(BName: string, PPath: string, arg: unknown, mData?: any): Promise<BaseComponent> {
+    public static asyncCreate(BName: string, PPath: string, args: any, mData?: any): Promise<BaseComponent | null> {
         return Promise.resolve(
             ResLoad.prefab(BName, PPath).then((prefab) => {
+                if (args instanceof Node) {
+                    if (!args.isValid) {
+                        return null;
+                    }
+                } else {
+                    if (!args.parent?.isValid) {
+                        return null;
+                    }
+                }
                 const component = instantiate(prefab).getComponent(BaseComponent);
                 if (mData) {
                     component.MData = Object.assign(Object.create(null), component.MData, mData);
                 }
-                component.setInit(arg);
+                component.setInit(args);
                 return component;
             })
         );
     }
 
-    public static syncCreate(pn: Prefab | Node, arg: unknown, mData?: any): BaseComponent {
+    public static syncCreate(pn: Prefab | Node, args: any, mData?: any): BaseComponent {
         const node = pn instanceof Prefab ? instantiate(pn) : pn;
         const component = node.getComponent(BaseComponent);
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
-        component.setInit(arg);
+        component.setInit(args);
         return component;
     }
 }

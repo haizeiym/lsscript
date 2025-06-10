@@ -1,4 +1,4 @@
-import { Button, Node, Widget } from "cc";
+import { Button, Node, view, Widget } from "cc";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
 import { LangSprite } from "./core/game/lang/LangSprite";
@@ -141,6 +141,14 @@ export namespace GG {
             widget.left = dis?.left ?? 0;
             widget.right = dis?.right ?? 0;
             widget.bottom = dis?.bottom ?? 0;
+        }
+
+        public static get sx(): number {
+            return view.getVisibleSize().width / view.getDesignResolutionSize().width;
+        }
+
+        public static get sy(): number {
+            return view.getVisibleSize().height / view.getDesignResolutionSize().height;
         }
     }
 }
