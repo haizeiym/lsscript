@@ -18,7 +18,6 @@ export class AdapterCanvas extends Component {
         } else {
             view.setResolutionPolicy(ResolutionPolicy.FIXED_WIDTH);
         }
-        console.log("视图修改");
     }
 
     onDestroy() {

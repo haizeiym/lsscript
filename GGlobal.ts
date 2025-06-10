@@ -5,6 +5,43 @@ import { LangSprite } from "./core/game/lang/LangSprite";
 import { GameData } from "./GameData";
 
 export namespace GG {
+    export class clsTime {
+        private static _syncTime: number = 50; //同步时间间隔
+        static get syncTime(): number {
+            return this._syncTime;
+        }
+
+        static set syncTime(value: number) {
+            this._syncTime = value;
+        }
+
+        private static _clientTime: number = 0;
+        static get clientTime(): number {
+            return this._clientTime || Date.now();
+        }
+
+        static set clientTime(value: number) {
+            this._clientTime = value;
+        }
+
+        private static _serverTime: number = 0;
+        static get serverTime(): number {
+            return this._serverTime || Date.now();
+        }
+
+        static set serverTime(value: number) {
+            this._serverTime = value;
+        }
+
+        static isSyncTime(): boolean {
+            let isSync = Math.abs(this.clientTime - this.serverTime) > this.syncTime;
+            if (isSync) {
+                this.clientTime = this.serverTime;
+            }
+            return isSync;
+        }
+    }
+
     export class clsExtra {
         private static _initAudio: boolean = false;
         private static _isPlayAudio: boolean = false;

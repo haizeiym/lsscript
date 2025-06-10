@@ -47,10 +47,6 @@ export class BaseComponent extends Component {
         NTime.removeObjTimeById(this, id);
     }
 
-    protected _addEvent(eName: string, callback: (...args: unknown[]) => void) {
-        Events.on(eName, callback, this);
-    }
-
     protected _addEventOnce(eName: string, callback: (...args: unknown[]) => void) {
         Events.once(eName, callback, this);
     }
@@ -89,6 +85,10 @@ export class BaseComponent extends Component {
         const countFn = new NCountFn(count);
         countFn.setEndCall(setEndCall);
         return countFn;
+    }
+
+    public addEvent(eName: string, callback: (...args: unknown[]) => void) {
+        Events.on(eName, callback, this);
     }
 
     public resetComponent() {
