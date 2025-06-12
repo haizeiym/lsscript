@@ -63,9 +63,23 @@ export class FrameAnimComp extends Component {
                 this.NodeDestroy();
                 return;
             }
+
             res.sort((a, b) => {
-                const numA = parseInt(a.name.match(/\d+/)[0]);
-                const numB = parseInt(b.name.match(/\d+/)[0]);
+                const matchA = a.name.match(/\d+(?=\D*$)/);
+                const matchB = b.name.match(/\d+(?=\D*$)/);
+
+                if (!matchA || !matchB) {
+                    console.warn(`Invalid frame name format: ${a.name} or ${b.name}`);
+                    return 0;
+                }
+
+                const numA = parseInt(matchA[0]);
+                const numB = parseInt(matchB[0]);
+                if (isNaN(numA) || isNaN(numB)) {
+                    console.warn(`Failed to parse numbers from: ${a.name} or ${b.name}`);
+                    return 0;
+                }
+
                 return numA - numB;
             });
             const allCount = res.length;
