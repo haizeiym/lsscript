@@ -59,7 +59,8 @@ export class FrameAnimComp extends Component {
         this.removeTime();
 
         ResLoad.dirT(args.bundleName, args.frameResPath, SpriteFrame).then((res: SpriteFrame[]) => {
-            if (!this.isValid || !this._sprite?.isValid || res.length === 0) {
+            if (!this.isValid || !this._sprite?.isValid) return;
+            if (res.length === 0) {
                 this.NodeDestroy();
                 return;
             }
