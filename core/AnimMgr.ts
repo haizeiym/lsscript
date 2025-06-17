@@ -83,7 +83,7 @@ export namespace AnimTw {
 export namespace AnimFa {
     const compTimeIdMap = new Map<Sprite, number>();
 
-    export interface optFa {
+    export const play = (opt: {
         comp: Sprite | Node;
         frames: SpriteFrame[];
         loopcount?: number;
@@ -91,47 +91,66 @@ export namespace AnimFa {
         defFrameIndex?: number;
         endCallBack?: (comp: Sprite) => void;
         oneEndCallBack?: (comp?: Sprite) => void;
-    }
+    }): void => {
+        let {
+            comp,
+            frames,
+            loopcount = 0,
+            frameTime = 0.1,
+            defFrameIndex = 0,
+            endCallBack = null,
+            oneEndCallBack = null
+        } = opt;
 
-    export const play = (opt: optFa): void => {
-        let { comp, frames, loopcount, frameTime, defFrameIndex, endCallBack, oneEndCallBack } = opt;
+        // 获取Sprite组件
         if (comp instanceof Node) {
             comp = comp.getComponent(Sprite);
         }
+        if (!comp?.isValid) return;
 
+        // 清理之前的定时器
         if (compTimeIdMap.delete(comp)) {
             NTime.removeObjTime(comp);
         }
 
-        if (!comp?.isValid) return;
-
-        frameTime = frameTime || 0.1;
-        loopcount = loopcount || 0;
-        defFrameIndex = defFrameIndex || 0;
-        endCallBack = endCallBack || null;
-        oneEndCallBack = oneEndCallBack || null;
+        // 优化帧排序：使用缓存避免重复计算
+        const frameCache = new Map<string, number>();
         frames.sort((a, b) => {
-            const matchA = a.name.match(/\d+(?=\D*$)/);
-            const matchB = b.name.match(/\d+(?=\D*$)/);
+            // 使用缓存获取数字
+            const getFrameNumber = (name: string): number => {
+                if (frameCache.has(name)) {
+                    return frameCache.get(name);
+                }
+                const match = name.match(/\d+(?=\D*$)/);
+                if (!match) {
+                    console.warn(`Invalid frame name format: ${name}`);
+                    return 0;
+                }
+                const num = parseInt(match[0]);
+                if (isNaN(num)) {
+                    console.warn(`Failed to parse number from: ${name}`);
+                    return 0;
+                }
+                frameCache.set(name, num);
+                return num;
+            };
 
-            if (!matchA || !matchB) {
-                console.warn(`Invalid frame name format: ${a.name} or ${b.name}`);
-                return 0;
-            }
-
-            const numA = parseInt(matchA[0]);
-            const numB = parseInt(matchB[0]);
-            if (isNaN(numA) || isNaN(numB)) {
-                console.warn(`Failed to parse numbers from: ${a.name} or ${b.name}`);
-                return 0;
-            }
-            return numA - numB;
+            return getFrameNumber(a.name) - getFrameNumber(b.name);
         });
 
         const allCount = frames.length;
-        let curCount = defFrameIndex;
+        let curCount = Math.min(defFrameIndex, allCount - 1); // 确保初始索引有效
         comp.spriteFrame = frames[curCount];
+
+        // 优化定时器回调
         const timeId = NTime.addObjTime(comp, frameTime * 1000, () => {
+            if (!comp?.isValid) {
+                if (compTimeIdMap.delete(comp)) {
+                    NTime.removeObjTime(comp);
+                }
+                return;
+            }
+
             curCount++;
             if (curCount >= allCount) {
                 if (loopcount > 0) {
@@ -140,11 +159,11 @@ export namespace AnimFa {
                         if (compTimeIdMap.delete(comp)) {
                             NTime.removeObjTime(comp);
                         }
-                        endCallBack && endCallBack(comp);
+                        endCallBack?.(comp);
                     } else {
                         curCount = defFrameIndex;
                         comp.spriteFrame = frames[curCount];
-                        oneEndCallBack && oneEndCallBack(comp);
+                        oneEndCallBack?.(comp);
                     }
                 } else {
                     curCount = defFrameIndex;
@@ -154,6 +173,7 @@ export namespace AnimFa {
                 comp.spriteFrame = frames[curCount];
             }
         });
+
         compTimeIdMap.set(comp, timeId);
     };
 
