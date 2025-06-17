@@ -99,10 +99,11 @@ export namespace AnimFa {
             comp = comp.getComponent(Sprite);
         }
 
-        if (!comp) return;
         if (compTimeIdMap.delete(comp)) {
             NTime.removeObjTime(comp);
         }
+
+        if (!comp?.isValid) return;
 
         frameTime = frameTime || 0.1;
         loopcount = loopcount || 0;
