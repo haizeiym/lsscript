@@ -152,28 +152,13 @@ export class BaseComponent extends Component {
         );
     }
 
-    public static syncCreate(pn: Prefab | Node, args: any, mData?: any): BaseComponent {
+    public static syncCreate<T extends BaseComponent>(pn: Prefab | Node, args: any, mData?: any): T {
         const node = pn instanceof Prefab ? instantiate(pn) : pn;
         const component = node.getComponent(BaseComponent);
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
         component.setInit(args);
-        return component;
-    }
-
-    public static syncCompT<T extends BaseComponent>(
-        comp: new (...args: any[]) => T,
-        pn: Prefab | Node,
-        args: any,
-        mData?: any
-    ): T {
-        const node = pn instanceof Prefab ? instantiate(pn) : pn;
-        const component = node.getComponent(comp);
-        if (mData) {
-            component.MData = Object.assign(Object.create(null), component.MData, mData);
-        }
-        component.setInit(args);
-        return component;
+        return component as T;
     }
 }
