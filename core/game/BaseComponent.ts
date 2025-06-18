@@ -8,7 +8,7 @@ const { ccclass, property } = _decorator;
 
 @ccclass("BaseComponent")
 export class BaseComponent extends Component {
-    public MData: any = Object.create(null);
+    public MData: any = Object.create(null); //防止循环引用中间数据
 
     private _bindUis: BindUI[] = [];
 
@@ -155,6 +155,21 @@ export class BaseComponent extends Component {
     public static syncCreate(pn: Prefab | Node, args: any, mData?: any): BaseComponent {
         const node = pn instanceof Prefab ? instantiate(pn) : pn;
         const component = node.getComponent(BaseComponent);
+        if (mData) {
+            component.MData = Object.assign(Object.create(null), component.MData, mData);
+        }
+        component.setInit(args);
+        return component;
+    }
+
+    public static syncCompT<T extends BaseComponent>(
+        comp: new (...args: any[]) => T,
+        pn: Prefab | Node,
+        args: any,
+        mData?: any
+    ): T {
+        const node = pn instanceof Prefab ? instantiate(pn) : pn;
+        const component = node.getComponent(comp);
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
