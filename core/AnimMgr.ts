@@ -23,7 +23,8 @@ export namespace AnimSp {
         spSkeleton: sp.Skeleton | Node,
         animName: string,
         loopcount: number = 0,
-        endCallBack: (spSkeleton?: sp.Skeleton) => void = null
+        endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
+        timeScale: number = 1
     ): void => {
         if (spSkeleton instanceof Node) {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
@@ -35,6 +36,7 @@ export namespace AnimSp {
             return;
         }
         let isLoop = loopcount === -1;
+        spSkeleton.timeScale = timeScale;
         spSkeleton.setAnimation(0, animName, isLoop);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
@@ -52,7 +54,8 @@ export namespace AnimSp {
         sdata: sp.SkeletonData,
         animName: string = null,
         loopcount: number = 0,
-        endCallBack: (spSkeleton?: sp.Skeleton) => void = null
+        endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
+        timeScale: number = 1
     ): void => {
         if (!stop(spSkeleton)) return;
         if (!sdata) {
@@ -61,7 +64,7 @@ export namespace AnimSp {
         }
         spSkeleton.skeletonData = sdata;
         if (!animName) return;
-        play(spSkeleton, animName, loopcount, endCallBack);
+        play(spSkeleton, animName, loopcount, endCallBack, timeScale);
     };
 }
 
