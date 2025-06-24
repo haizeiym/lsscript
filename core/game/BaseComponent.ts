@@ -166,6 +166,9 @@ export class BaseComponent extends Component {
                     if (!args.parent?.isValid) {
                         return null;
                     }
+                    if (!args.bundleName) {
+                        args.bundleName = BName;
+                    }
                 }
                 const component = instantiate(prefab).getComponent(BaseComponent);
                 if (mData) {
