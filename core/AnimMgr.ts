@@ -103,7 +103,8 @@ export namespace AnimFa {
             frameTime = 0.1,
             defFrameIndex = 0,
             endCallBack = null,
-            oneEndCallBack = null
+            oneEndCallBack = null,
+            frameCallBack = null
         } = opt;
 
         // 获取Sprite组件
@@ -145,7 +146,7 @@ export namespace AnimFa {
         const allCount = frames.length;
         let curCount = Math.min(defFrameIndex, allCount - 1); // 确保初始索引有效
         comp.spriteFrame = frames[curCount];
-        opt.frameCallBack?.(comp, curCount);
+        frameCallBack?.(comp, curCount);
         // 优化定时器回调
         const timeId = NTime.addObjTime(comp, frameTime * 1000, () => {
             if (!comp?.isValid) {
@@ -167,17 +168,17 @@ export namespace AnimFa {
                     } else {
                         curCount = defFrameIndex;
                         comp.spriteFrame = frames[curCount];
-                        opt.frameCallBack?.(comp, curCount);
+                        frameCallBack?.(comp, curCount);
                         oneEndCallBack?.(comp);
                     }
                 } else {
                     curCount = defFrameIndex;
                     comp.spriteFrame = frames[curCount];
-                    opt.frameCallBack?.(comp, curCount);
+                    frameCallBack?.(comp, curCount);
                 }
             } else {
                 comp.spriteFrame = frames[curCount];
-                opt.frameCallBack?.(comp, curCount);
+                frameCallBack?.(comp, curCount);
             }
         });
 
