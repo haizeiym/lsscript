@@ -8,9 +8,20 @@ const { ccclass, property } = _decorator;
 
 @ccclass("BaseComponent")
 export class BaseComponent extends Component {
-    public MData: any = Object.create(null); //防止循环引用中间数据
+    private _mData: any = null;
 
-    private _bindUis: BindUI[] = [];
+    public set MData(value: any) {
+        this._mData = value;
+    }
+
+    public get MData() {
+        if (!this._mData) this._mData = Object.create(null);
+        return this._mData;
+    }
+
+    private _bindUis: BindUI[] = null;
+
+    private _countFns: NCountFn[] = null;
 
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
@@ -31,6 +42,7 @@ export class BaseComponent extends Component {
 
     protected _getUI(node: Node, isDeep: boolean = false): BindUI {
         let bUI = BindUI.Creator(node, isDeep);
+        if (!this._bindUis) this._bindUis = [];
         this._bindUis.push(bUI);
         return bUI;
     }
@@ -84,6 +96,8 @@ export class BaseComponent extends Component {
     protected _getCountFn(count: number, setEndCall?: () => void): NCountFn {
         const countFn = new NCountFn(count);
         countFn.setEndCall(setEndCall);
+        if (!this._countFns) this._countFns = [];
+        this._countFns.push(countFn);
         return countFn;
     }
 
@@ -95,8 +109,9 @@ export class BaseComponent extends Component {
         NTime.removeObjTime(this);
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
+        this.clearCountFn();
         this.node.targetOff(this);
-        this.MData = Object.create(null);
+        this.MData = null;
         this.clearUI();
     }
 
@@ -107,11 +122,21 @@ export class BaseComponent extends Component {
         this.node.destroy();
     }
 
+    private clearCountFn() {
+        if (!this._countFns) return;
+        for (const countFn of this._countFns) {
+            countFn.reset();
+            countFn.setEndCall(null);
+        }
+        this._countFns = null;
+    }
+
     private clearUI() {
+        if (!this._bindUis) return;
         for (const bUI of this._bindUis) {
             bUI.Clear();
         }
-        this._bindUis = [];
+        this._bindUis = null;
     }
 
     public setInit(args?: unknown, args1?: unknown, args2?: unknown): void {
