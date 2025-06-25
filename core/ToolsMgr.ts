@@ -22,7 +22,11 @@ export namespace Tools {
             const endIndex = end ?? target;
             const direction = reverse ? -1 : 1;
 
-            for (let i = reverse ? endIndex - 1 : startIndex; reverse ? i >= startIndex : i < endIndex; i += step * direction) {
+            for (
+                let i = reverse ? endIndex - 1 : startIndex;
+                reverse ? i >= startIndex : i < endIndex;
+                i += step * direction
+            ) {
                 if (callback(i, i) === true) return;
             }
         } else {
@@ -33,7 +37,11 @@ export namespace Tools {
             const endIndex = end ?? len;
             const direction = reverse ? -1 : 1;
 
-            for (let i = reverse ? endIndex - 1 : startIndex; reverse ? i >= startIndex : i < endIndex; i += step * direction) {
+            for (
+                let i = reverse ? endIndex - 1 : startIndex;
+                reverse ? i >= startIndex : i < endIndex;
+                i += step * direction
+            ) {
                 if (callback(target[i], i) === true) return;
             }
         }
@@ -45,7 +53,11 @@ export namespace Tools {
      * @param callback 回调函数
      * @param mode 处理模式
      */
-    export const arrayProcess = <T>(array: T[], callback: (item: T, index: number) => void | boolean, mode: "pop" | "shift" | "keep" = "keep") => {
+    export const arrayProcess = <T>(
+        array: T[],
+        callback: (item: T, index: number) => void | boolean,
+        mode: "pop" | "shift" | "keep" = "keep"
+    ) => {
         if (!array.length) return;
 
         switch (mode) {
@@ -107,7 +119,10 @@ export namespace Tools {
      * Tool.formatString("测试字符串%{a1}--%{a2}...", {a1: 111, a2: "abc"});
      * Tool.formatString("测试字符串%{a1}--%{a2}...", 111, "abc");
      */
-    export const formatString = (text: string, ...option: [Record<string, string | number>] | Array<string | number>): string => {
+    export const formatString = (
+        text: string,
+        ...option: [Record<string, string | number>] | Array<string | number>
+    ): string => {
         let result = text;
         if (option.length === 1 && Object.prototype.toString.call(option[0]) === "[object Object]") {
             // 参数为键值对
@@ -159,5 +174,19 @@ export namespace Tools {
 
             return result;
         }
+    };
+
+    /**
+     * 打乱数组
+     * @param array 源数组
+     * @returns 打乱后的数组
+     */
+    export const shuffle = <T>(array: T[]): T[] => {
+        const result = array.slice();
+        for (let i = result.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [result[i], result[j]] = [result[j], result[i]];
+        }
+        return result;
     };
 }
