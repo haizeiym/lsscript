@@ -109,17 +109,21 @@ export class BaseComponent extends Component {
         NTime.removeObjTime(this);
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
-        this.clearCountFn();
-        this.node.targetOff(this);
         this.MData = null;
+        this.clearCountFn();
         this.clearUI();
     }
 
     public NodeDestroy() {
-        if (!this.isValid) return;
-        this._destroyBefore();
-        this.resetComponent();
-        this.node.destroy();
+        if (this.isValid) {
+            this._destroyBefore();
+            this.resetComponent();
+            this.destroy();
+        }
+
+        if (this.node?.isValid) {
+            this.node.destroy();
+        }
     }
 
     private clearCountFn() {
