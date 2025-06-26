@@ -76,7 +76,7 @@ export namespace ResLoad {
         bName: string,
         resName: string,
         resType: new (...args: any[]) => T,
-        onProgress?: Function,
+        onProgress?: (finish: number, total: number, item?: any) => void,
         version: string | null = null
     ): Promise<T[]> => {
         return new Promise(async (resolve) => {
