@@ -85,11 +85,11 @@ export class BaseComponent extends Component {
         return opacity;
     }
 
-    protected _addClick(node: Node | Button, callback: () => void) {
+    protected _addClick(node: Node | Button, callback: (btn?: Button) => void) {
         Btn.clickBtn(this, node, callback);
     }
 
-    protected _addCommonClick(callback: () => void) {
+    protected _addCommonClick(callback: (btn?: Button) => void) {
         Btn.setTargetBtnCallback(this, callback);
     }
 

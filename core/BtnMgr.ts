@@ -16,7 +16,7 @@ export class Btn {
         this._targetBtnCallback.delete(target);
     }
 
-    public static clickBtn(target: Component, btnNode: Node | Button, callback: () => void) {
+    public static clickBtn(target: Component, btnNode: Node | Button, callback: (btn?: Button) => void) {
         if (btnNode instanceof Button) btnNode = btnNode.node;
         btnNode.off(Button.EventType.CLICK);
         btnNode.on(
@@ -24,7 +24,7 @@ export class Btn {
             () => {
                 this._commonBtnCallback && this._commonBtnCallback();
                 this._targetBtnCallback.get(target)?.();
-                callback.apply(target);
+                callback.apply(target, [btnNode]);
             },
             target
         );
