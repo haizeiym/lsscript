@@ -35,9 +35,13 @@ export namespace AnimSp {
             console.warn("animName不能为空");
             return;
         }
-        let isLoop = loopcount === -1;
         spSkeleton.timeScale = timeScale;
-        spSkeleton.setAnimation(0, animName, isLoop);
+        if (!spSkeleton.findAnimation(animName)) {
+            stop(spSkeleton);
+            endCallBack && endCallBack(spSkeleton);
+            return;
+        }
+        spSkeleton.setAnimation(0, animName, loopcount <= 0);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
                 loopcount--;
