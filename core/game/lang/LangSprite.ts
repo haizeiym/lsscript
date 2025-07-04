@@ -58,7 +58,13 @@ export class LangSprite extends Component {
         }
     }
 
-    private async _getSpriteFrame(langKey: string = this._langKey, langPath: string = this._langPath): Promise<SpriteFrame> {
+    private async _getSpriteFrame(
+        langKey: string = this._langKey,
+        langPath: string = this._langPath
+    ): Promise<SpriteFrame> {
+        if (!langKey) {
+            return null;
+        }
         return await ResLoad.spriteFrame(this._bundleName, `${langPath}/${LangMgr.lang}/${langKey}`);
     }
 
