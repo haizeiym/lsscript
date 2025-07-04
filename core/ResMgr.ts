@@ -30,10 +30,10 @@ export namespace ResLoad {
         });
     };
 
-    const res = <T extends Asset>(
+    export const res = <T extends Asset>(
         bName: string,
         resName: string,
-        resType: typeof Asset,
+        resType: new (...args: any[]) => T,
         version: string | null = null
     ): Promise<T> => {
         return new Promise(async (resolve) => {
