@@ -28,6 +28,10 @@ export namespace AnimSp {
     ): void => {
         if (spSkeleton instanceof Node) {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
+            if (!spSkeleton) {
+                console.warn("组件不存在");
+                return;
+            }
         }
         if (!stop(spSkeleton)) return;
 
@@ -41,11 +45,10 @@ export namespace AnimSp {
             endCallBack && endCallBack(spSkeleton);
             return;
         }
-        spSkeleton.setAnimation(0, animName, loopcount <= 0);
+        spSkeleton.setAnimation(0, animName, true);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
-                loopcount--;
-                if (loopcount <= 0) {
+                if (--loopcount <= 0) {
                     stop(spSkeleton);
                     endCallBack && endCallBack(spSkeleton);
                 }
