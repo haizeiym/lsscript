@@ -66,6 +66,7 @@ export namespace AnimSp {
     ): void => {
         if (!stop(spSkeleton)) return;
         if (!sdata) {
+            endCallBack?.(spSkeleton);
             console.error("sdata不能为空");
             return;
         }
