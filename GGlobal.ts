@@ -99,6 +99,19 @@ export namespace GG {
         }
 
         /**
+         * 多语言图片设置
+         * @param node 节点
+         * @param key 多语言key
+         * @param useInit 是否使用初始化key
+         */
+        static changiLangBk(node: Node, bundleName: string, langKey: string, langPath: string = "lang") {
+            let ls = node.getComponent(LangSprite);
+            if (ls) {
+                ls.setBk(bundleName, langKey, langPath);
+            }
+        }
+
+        /**
          * 多语言文字设置
          * @param node 节点
          * @param key 多语言key

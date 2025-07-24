@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, Node, Sprite, SpriteFrame } from "cc";
+import { _decorator, Button, CCBoolean, CCString, Component, Node, Sprite, SpriteFrame } from "cc";
 import { ResLoad } from "../../ResMgr";
 import { eventsOnLoad, preloadEvent } from "../BaseDescriptor";
 import { GEventName } from "../GEventsName";
@@ -17,6 +17,52 @@ export class LangSprite extends Component {
     private _langKey: string = "";
     private _langPath: string = "";
     private _bundleName: string = "";
+
+    private _isShowSetBk: boolean = false;
+    @property({ type: CCBoolean, displayName: "是否显示设置" })
+    public set isShowSetBk(value: boolean) {
+        this._isShowSetBk = value;
+    }
+    public get isShowSetBk() {
+        return this._isShowSetBk;
+    }
+
+    @property({
+        type: CCString,
+        displayName: "资源包名称",
+        visible() {
+            return this._isShowSetBk;
+        }
+    })
+    public set bundleName(value: string) {
+        this._bundleName = value;
+    }
+
+    public get bundleName() {
+        return this._bundleName;
+    }
+
+    @property({
+        type: CCString,
+        displayName: "语言key",
+        visible() {
+            return this._isShowSetBk;
+        }
+    })
+    public set langKey(value: string) {
+        this._langKey = value;
+    }
+
+    @property({
+        type: CCString,
+        displayName: "语言路径",
+        visible() {
+            return this._isShowSetBk;
+        }
+    })
+    public set langPath(value: string) {
+        this._langPath = value;
+    }
 
     private _sprite: Sprite = null;
     private _btn: Button = null;
@@ -53,7 +99,7 @@ export class LangSprite extends Component {
 
     private async _updateSprite() {
         const spriteFrame = await this._getSpriteFrame();
-        if (spriteFrame) {
+        if (spriteFrame && this.isValid) {
             this._sprite.spriteFrame = spriteFrame;
         }
     }
@@ -83,6 +129,15 @@ export class LangSprite extends Component {
             if (!spr) spr = btn.normalSprite;
             if (spr) btn.disabledSprite = spr;
         }
+    }
+
+    public setBk(bundleName: string, langKey: string, langPath: string = "lang") {
+        this._bundleName = bundleName;
+        this._langKey = langKey;
+        this._langPath = langPath;
+        if (!this._sprite) this._sprite = this.getComponent(Sprite);
+        if (!this._sprite) this._sprite = this.addComponent(Sprite)!;
+        this._updateSprite();
     }
 
     /**
