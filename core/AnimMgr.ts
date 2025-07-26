@@ -197,7 +197,7 @@ export namespace AnimFa {
         if (comp instanceof Node) {
             comp = comp.getComponent(Sprite);
         }
-        if (!comp) return;
+        if (!comp?.isValid) return;
         if (compTimeIdMap.delete(comp)) {
             NTime.removeObjTime(comp);
         }
