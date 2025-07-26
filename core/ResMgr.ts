@@ -36,14 +36,15 @@ export namespace ResLoad {
         resType: new (...args: any[]) => T,
         version: string | null = null
     ): Promise<T> => {
-        return new Promise(async (resolve) => {
-            let bundle = await getBundle(bName, version);
-            bundle.load(resName, resType, null, (err: Error, data: T) => {
-                if (err) {
-                    resolve(null);
-                } else {
-                    resolve(data);
-                }
+        return new Promise((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                bundle.load(resName, resType, null, (err: Error, data: T) => {
+                    if (err) {
+                        resolve(null);
+                    } else {
+                        resolve(data);
+                    }
+                });
             });
         });
     };
@@ -54,21 +55,22 @@ export namespace ResLoad {
         onProgress?: Function,
         version: string | null = null
     ): Promise<T[]> => {
-        return new Promise(async (resolve) => {
-            let bundle = await getBundle(bName, version);
-            bundle.loadDir(
-                resName,
-                (finish: number, total: number, item: any) => {
-                    onProgress && onProgress(finish, total, item);
-                },
-                (err: Error, data: T[]) => {
-                    if (err) {
-                        resolve(null);
-                    } else {
-                        resolve(data);
+        return new Promise((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                bundle.loadDir(
+                    resName,
+                    (finish: number, total: number, item: any) => {
+                        onProgress && onProgress(finish, total, item);
+                    },
+                    (err: Error, data: T[]) => {
+                        if (err) {
+                            resolve(null);
+                        } else {
+                            resolve(data);
+                        }
                     }
-                }
-            );
+                );
+            });
         });
     };
 
@@ -79,22 +81,23 @@ export namespace ResLoad {
         onProgress?: (finish: number, total: number, item?: any) => void,
         version: string | null = null
     ): Promise<T[]> => {
-        return new Promise(async (resolve) => {
-            let bundle = await getBundle(bName, version);
-            bundle.loadDir(
-                resName,
-                resType,
-                (finish: number, total: number, item: any) => {
-                    onProgress && onProgress(finish, total, item);
-                },
-                (err: Error, data: T[]) => {
-                    if (err) {
-                        resolve(null);
-                    } else {
-                        resolve(data);
+        return new Promise((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                bundle.loadDir(
+                    resName,
+                    resType,
+                    (finish: number, total: number, item: any) => {
+                        onProgress && onProgress(finish, total, item);
+                    },
+                    (err: Error, data: T[]) => {
+                        if (err) {
+                            resolve(null);
+                        } else {
+                            resolve(data);
+                        }
                     }
-                }
-            );
+                );
+            });
         });
     };
 
