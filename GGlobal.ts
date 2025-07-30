@@ -5,6 +5,17 @@ import { LangSprite } from "./core/game/lang/LangSprite";
 import { GameData } from "./GameData";
 
 export namespace GG {
+    const urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+    export const nanoid = (size = 21) => {
+        let id = "";
+        let i = size;
+        while (i--) {
+            id += urlAlphabet[(Math.random() * 64) | 0];
+        }
+        return id;
+    };
+
     export class clsTime {
         private static _syncTime: number = 50; //同步时间间隔
         static get syncTime(): number {
