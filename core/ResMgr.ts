@@ -131,7 +131,7 @@ export namespace ResLoad {
         bName: string,
         resName: string,
         resType: new (...args: any[]) => T,
-        isCache: boolean = true,
+        isCache: boolean = false,
         onProgress?: (finish: number, total: number, item?: any) => void,
         version: string | null = null
     ): Promise<T[]> => {
