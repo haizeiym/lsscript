@@ -50,6 +50,7 @@ export namespace AnimSp {
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
                 if (--loopcount <= 0) {
+                    spSkeleton.skeletonData = null;
                     stop(spSkeleton);
                     endCallBack && endCallBack(spSkeleton);
                 }
