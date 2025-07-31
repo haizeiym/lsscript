@@ -45,6 +45,7 @@ export namespace AnimSp {
             endCallBack && endCallBack(spSkeleton);
             return;
         }
+        spSkeleton.premultipliedAlpha = false;
         spSkeleton.setAnimation(0, animName, true);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
