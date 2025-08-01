@@ -59,6 +59,10 @@ export class BaseComponent extends Component {
         NTime.removeObjTimeById(this, id);
     }
 
+    protected _removeAllTime() {
+        NTime.removeObjTime(this);
+    }
+
     protected _addEventOnce(eName: string, callback: (...args: unknown[]) => void) {
         Events.once(eName, callback, this);
     }
@@ -106,7 +110,7 @@ export class BaseComponent extends Component {
     }
 
     public resetComponent() {
-        NTime.removeObjTime(this);
+        this._removeAllTime();
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
         this.MData = null;
