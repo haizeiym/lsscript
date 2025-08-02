@@ -87,9 +87,13 @@ export namespace ResLoad {
     ) => {
         const key = `${bName}_${resName}_${version || ""}`;
         if (isReleAsset) {
-            assetManager.releaseAsset(_assetMap.get(key) as T);
+            clearCacheResT(_assetMap.get(key) as T);
         }
         _assetMap.delete(key);
+    };
+
+    export const clearCacheResT = <T extends Asset>(res: T) => {
+        assetManager.releaseAsset(res);
     };
 
     export const dir = <T extends Asset>(

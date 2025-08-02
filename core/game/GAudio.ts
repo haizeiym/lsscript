@@ -8,9 +8,9 @@ export namespace GAudio {
         });
     };
 
-    export const effect = (bName: string, pName: string) => {
+    export const effect = (bName: string, pName: string, volume: number = AudioMgr.effectVolume) => {
         ResLoad.audioClip(bName, pName).then((sound) => {
-            AudioMgr.playEffect(sound);
+            AudioMgr.playEffect(sound, volume);
         });
     };
 
@@ -27,7 +27,11 @@ export namespace GAudio {
     };
 
     export const setEffectVolume = (volume: number) => {
-        AudioMgr.setEffectVolume(volume);
+        AudioMgr.effectVolume = volume;
+    };
+
+    export const getEffectVolume = () => {
+        return AudioMgr.effectVolume;
     };
 
     export const setBgmVolume = (volume: number) => {

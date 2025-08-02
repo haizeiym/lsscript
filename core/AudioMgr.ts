@@ -22,8 +22,12 @@ export class AudioMgr {
         return this._audioSource;
     }
 
-    public static setEffectVolume(volume: number) {
+    public static set effectVolume(volume: number) {
         this._effectVolume = volume;
+    }
+
+    public static get effectVolume() {
+        return this._effectVolume;
     }
 
     public static setBgmVolume(volume: number) {
@@ -31,9 +35,9 @@ export class AudioMgr {
         this._audioSource.volume = this._bgmVolume;
     }
 
-    public static playEffect(sound: AudioClip) {
+    public static playEffect(sound: AudioClip, volume: number = this._effectVolume) {
         if (this._isStop || this._isEffectPlaying) return;
-        this._audioSource.playOneShot(sound, this._effectVolume);
+        this._audioSource.playOneShot(sound, volume);
     }
 
     public static playBgm(sound: AudioClip, loop: boolean = true) {
