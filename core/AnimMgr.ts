@@ -24,7 +24,8 @@ export namespace AnimSp {
         animName: string,
         loopcount: number = 0,
         endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
-        timeScale: number = 1
+        timeScale: number = 1,
+        premultipliedAlpha: boolean = false
     ): void => {
         if (spSkeleton instanceof Node) {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
@@ -45,7 +46,7 @@ export namespace AnimSp {
             endCallBack && endCallBack(spSkeleton);
             return;
         }
-        spSkeleton.premultipliedAlpha = false;
+        spSkeleton.premultipliedAlpha = premultipliedAlpha;
         spSkeleton.setAnimation(0, animName, true);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
@@ -64,7 +65,8 @@ export namespace AnimSp {
         animName: string = null,
         loopcount: number = 0,
         endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
-        timeScale: number = 1
+        timeScale: number = 1,
+        premultipliedAlpha: boolean = false
     ): void => {
         if (!stop(spSkeleton)) return;
         if (!sdata) {
@@ -74,7 +76,7 @@ export namespace AnimSp {
         }
         spSkeleton.skeletonData = sdata;
         if (!animName) return;
-        play(spSkeleton, animName, loopcount, endCallBack, timeScale);
+        play(spSkeleton, animName, loopcount, endCallBack, timeScale, premultipliedAlpha);
     };
 }
 
