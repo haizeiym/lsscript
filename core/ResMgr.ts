@@ -22,7 +22,8 @@ export namespace ResLoad {
             if (db) {
                 resolve(db);
             } else {
-                assetManager.loadBundle(bName, { version }, (err: Error, data: AssetManager.Bundle) => {
+                const v = !version ? null : { version };
+                assetManager.loadBundle(bName, v, (err: Error, data: AssetManager.Bundle) => {
                     if (err) {
                         resolve(null);
                     } else {

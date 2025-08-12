@@ -1,4 +1,4 @@
-import { _decorator, Button, CCBoolean, CCString, Component, Node, Sprite, SpriteFrame } from "cc";
+import { _decorator, Button, CCString, Component, Node, Sprite, SpriteFrame } from "cc";
 import { ResLoad } from "../../ResMgr";
 import { eventsOnLoad, preloadEvent } from "../BaseDescriptor";
 import { GEventName } from "../GEventsName";
@@ -13,25 +13,16 @@ const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 @requireComponent(Sprite)
 @disallowMultiple
 export class LangSprite extends Component {
-    private _initLangKey: string = "";
-    private _langKey: string = "";
-    private _langPath: string = "";
+    @property({ displayName: "是否显示设置" })
+    public isShowSetBk: boolean = true;
+
+    @property({ displayName: "资源包名称" })
     private _bundleName: string = "";
-
-    private _isShowSetBk: boolean = false;
-    @property({ type: CCBoolean, displayName: "是否显示设置" })
-    public set isShowSetBk(value: boolean) {
-        this._isShowSetBk = value;
-    }
-    public get isShowSetBk() {
-        return this._isShowSetBk;
-    }
-
     @property({
         type: CCString,
         displayName: "资源包名称",
         visible() {
-            return this._isShowSetBk;
+            return this.isShowSetBk;
         }
     })
     public set bundleName(value: string) {
@@ -42,26 +33,52 @@ export class LangSprite extends Component {
         return this._bundleName;
     }
 
+    @property({ displayName: "语言key" })
+    private _langKey: string = "";
     @property({
         type: CCString,
         displayName: "语言key",
         visible() {
-            return this._isShowSetBk;
+            return this.isShowSetBk;
         }
     })
     public set langKey(value: string) {
         this._langKey = value;
     }
 
+    public get langKey() {
+        if (!this._langKey) {
+            if (this.node?.name.startsWith("Langi")) {
+                this._langKey = this.node.name.substring(5);
+            } else {
+                this._langKey = this.node?.name || "";
+            }
+        }
+        return this._langKey;
+    }
+
+    @property({ displayName: "语言路径" })
+    private _langPath: string = "";
     @property({
         type: CCString,
         displayName: "语言路径",
         visible() {
-            return this._isShowSetBk;
+            return this.isShowSetBk;
         }
     })
     public set langPath(value: string) {
         this._langPath = value;
+    }
+
+    public get langPath() {
+        return this._langPath || "lang";
+    }
+
+    @property({ displayName: "初始语言key" })
+    private _initLangKey: string = "";
+
+    public get initLangKey() {
+        return this._initLangKey;
     }
 
     private _sprite: Sprite = null;
@@ -78,18 +95,6 @@ export class LangSprite extends Component {
         this._updateSprite();
     }
 
-    public get langKey() {
-        return this._langKey;
-    }
-
-    public get langPath() {
-        return this._langPath;
-    }
-
-    public get initLangKey() {
-        return this._initLangKey;
-    }
-
     @preloadEvent(GEventName.LangChange)
     public updateLangSprite() {
         // 只在语言改变时更新
@@ -100,18 +105,19 @@ export class LangSprite extends Component {
     private async _updateSprite() {
         const spriteFrame = await this._getSpriteFrame();
         if (spriteFrame && this.isValid) {
+            if (!this._sprite) this._sprite = this.getComponent(Sprite);
             this._sprite.spriteFrame = spriteFrame;
         }
     }
 
     private async _getSpriteFrame(
-        langKey: string = this._langKey,
-        langPath: string = this._langPath
+        langKey: string = this.langKey,
+        langPath: string = this.langPath
     ): Promise<SpriteFrame> {
         if (!langKey) {
             return null;
         }
-        return await ResLoad.spriteFrame(this._bundleName, `${langPath}/${LangMgr.lang}/${langKey}`);
+        return await ResLoad.spriteFrame(this._bundleName, `${langPath}/${LangMgr.lang}/${langKey}`, true);
     }
 
     public async setBtnStateSpr(btn: Button, suffix: string = "un", suffixDis: string = "dis") {
