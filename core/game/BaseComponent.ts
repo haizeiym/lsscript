@@ -194,6 +194,7 @@ export class BaseComponent extends Component {
         if (mData) {
             component.MData = Object.assign(Object.create(null), component.MData, mData);
         }
+        if (!args) return component as T;
         component.setInit(args);
         return component as T;
     }
