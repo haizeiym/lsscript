@@ -22,14 +22,17 @@ export namespace ResLoad {
             if (db) {
                 resolve(db);
             } else {
-                const v = !version ? null : { version };
-                assetManager.loadBundle(bName, v, (err: Error, data: AssetManager.Bundle) => {
-                    if (err) {
-                        resolve(null);
-                    } else {
-                        resolve(data);
+                assetManager.loadBundle(
+                    bName,
+                    !version ? null : { version },
+                    (err: Error, data: AssetManager.Bundle) => {
+                        if (err) {
+                            resolve(null);
+                        } else {
+                            resolve(data);
+                        }
                     }
-                });
+                );
             }
         });
     };
@@ -59,6 +62,11 @@ export namespace ResLoad {
 
         return new Promise((resolve) => {
             getBundle(bName, version).then((bundle) => {
+                if (!bundle) {
+                    console.warn(`res load error: ${bName} ${resName} ${version}`);
+                    resolve(null);
+                    return;
+                }
                 bundle.load(resName, resType, null, (err: Error, data: T) => {
                     if (err) {
                         resolve(null);
