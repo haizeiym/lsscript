@@ -63,7 +63,7 @@ export namespace ResLoad {
         return new Promise((resolve) => {
             getBundle(bName, version).then((bundle) => {
                 if (!bundle) {
-                    console.warn(`res load error: ${bName} ${resName} ${version}`);
+                    console.warn(`res load error: bName:${bName}-resName:${resName}-version:${version}`);
                     resolve(null);
                     return;
                 }

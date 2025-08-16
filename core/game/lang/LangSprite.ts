@@ -16,6 +16,9 @@ export class LangSprite extends Component {
     @property({ displayName: "是否显示设置" })
     public isShowSetBk: boolean = true;
 
+    @property({ displayName: "是否在onLoad时设置" })
+    private isOnLoad: boolean = true;
+
     @property({ displayName: "资源包名称" })
     private _bundleName: string = "";
     @property({
@@ -95,9 +98,14 @@ export class LangSprite extends Component {
         this._updateSprite();
     }
 
+    protected onLoad(): void {
+        if (this.isOnLoad) {
+            this._updateSprite();
+        }
+    }
+
     @preloadEvent(GEventName.LangChange)
     public updateLangSprite() {
-        // 只在语言改变时更新
         this._updateSprite();
         this.setBtnStateSpr(this._btn);
     }
@@ -112,12 +120,14 @@ export class LangSprite extends Component {
 
     private async _getSpriteFrame(
         langKey: string = this.langKey,
-        langPath: string = this.langPath
+        langPath: string = this.langPath,
+        bundleName: string = this.bundleName
     ): Promise<SpriteFrame> {
-        if (!langKey) {
+        if (!langKey || !bundleName) {
+            console.warn(`langKey:${langKey}-bundleName:${bundleName}`);
             return null;
         }
-        return await ResLoad.spriteFrame(this._bundleName, `${langPath}/${LangMgr.lang}/${langKey}`, true);
+        return await ResLoad.spriteFrame(bundleName, `${langPath}/${LangMgr.lang}/${langKey}`, true);
     }
 
     public async setBtnStateSpr(btn: Button, suffix: string = "un", suffixDis: string = "dis") {
@@ -161,6 +171,7 @@ export class LangSprite extends Component {
         }
         let ls = parnet.getComponent(LangSprite);
         if (!ls) ls = parnet.addComponent(LangSprite);
+        ls.isOnLoad = false;
         ls._sprite = ls.getComponent(Sprite);
         if (!ls._sprite) ls._sprite = ls.addComponent(Sprite)!;
         ls._langKey = key;
