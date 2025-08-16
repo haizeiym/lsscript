@@ -13,9 +13,10 @@ export namespace AnimSp {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
         }
         if (!isValid(spSkeleton)) return false;
+        spSkeleton.loop = false;
+        spSkeleton.paused = true;
         spSkeleton.setEndListener(null);
         spSkeleton.setCompleteListener(null);
-        spSkeleton.clearAnimation();
         return true;
     };
 
@@ -26,7 +27,7 @@ export namespace AnimSp {
         endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
         timeScale: number = 1,
         premultipliedAlpha: boolean = false
-    ): void => {
+    ): sp.spine.Animation => {
         if (spSkeleton instanceof Node) {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
             if (!spSkeleton) {
@@ -34,20 +35,23 @@ export namespace AnimSp {
                 return;
             }
         }
-        if (!stop(spSkeleton)) return;
+        if (!isValid(spSkeleton)) return;
 
         if (!animName) {
             console.warn("animName不能为空");
             return;
         }
         spSkeleton.timeScale = timeScale;
-        if (!spSkeleton.findAnimation(animName)) {
+        const fAnimation = spSkeleton.findAnimation(animName);
+        if (!fAnimation) {
             stop(spSkeleton);
             endCallBack && endCallBack(spSkeleton);
-            return;
+            return null;
         }
         spSkeleton.premultipliedAlpha = premultipliedAlpha;
-        spSkeleton.setAnimation(0, animName, true);
+        spSkeleton.loop = true;
+        spSkeleton.paused = false;
+        spSkeleton.setAnimation(0, animName);
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
                 if (--loopcount <= 0) {
@@ -57,6 +61,7 @@ export namespace AnimSp {
                 }
             });
         }
+        return fAnimation;
     };
 
     export const cSpData = (
@@ -67,8 +72,8 @@ export namespace AnimSp {
         endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
         timeScale: number = 1,
         premultipliedAlpha: boolean = false
-    ): void => {
-        if (!stop(spSkeleton)) return;
+    ): sp.spine.Animation => {
+        if (!isValid(spSkeleton)) return;
         if (!sdata) {
             endCallBack?.(spSkeleton);
             console.error("sdata不能为空");
@@ -76,7 +81,7 @@ export namespace AnimSp {
         }
         spSkeleton.skeletonData = sdata;
         if (!animName) return;
-        play(spSkeleton, animName, loopcount, endCallBack, timeScale, premultipliedAlpha);
+        return play(spSkeleton, animName, loopcount, endCallBack, timeScale, premultipliedAlpha);
     };
 }
 
