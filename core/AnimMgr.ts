@@ -1,4 +1,4 @@
-import { Node, sp, Sprite, SpriteFrame } from "cc";
+import { Component, Node, sp, Sprite, SpriteFrame, tween, Tween } from "cc";
 import { NTime } from "./NMgr";
 
 export namespace AnimSp {
@@ -97,6 +97,46 @@ export namespace AnimTw {
             k = k - 1;
             return 1 + k * k * ((overshoot + 1) * k + overshoot);
         };
+    };
+
+    const targetTw = new Map<Component, Tween[]>();
+
+    export const addTgTw = <T1 extends Component, T2 extends object = any>(
+        target?: T1,
+        target2?: T2 | Tween<T2>
+    ): Tween<T2> => {
+        let tws = targetTw.get(target);
+        if (!tws) {
+            tws = [];
+            targetTw.set(target, tws);
+        }
+        const ttw = target2 ? (target2 instanceof Tween ? target2 : tween(target2)) : tween();
+        tws.push(ttw);
+        return ttw;
+    };
+
+    export const rmTgTw = <T extends Component>(target: T, tw?: Tween): void => {
+        const tws = targetTw.get(target);
+        if (!tws) return;
+        if (!tw) {
+            tws.forEach((tw) => {
+                tw.stop();
+            });
+            targetTw.delete(target);
+            return;
+        }
+        const index = tws.indexOf(tw);
+        if (index !== -1) {
+            if (index === tws.length - 1) {
+                tws.pop();
+            } else {
+                tws.splice(index, 1);
+            }
+
+            if (tws.length === 0) {
+                targetTw.delete(target);
+            }
+        }
     };
 }
 
