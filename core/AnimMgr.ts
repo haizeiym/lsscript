@@ -115,7 +115,7 @@ export namespace AnimTw {
         return ttw;
     };
 
-    export const rmTgTw = <T extends Component>(target: T, tw?: Tween): void => {
+    export const delTgTw = <T extends Component>(target: T, tw?: Tween): void => {
         const tws = targetTw.get(target);
         if (!tws) return;
         if (!tw) {
@@ -136,6 +136,8 @@ export namespace AnimTw {
             if (tws.length === 0) {
                 targetTw.delete(target);
             }
+        } else {
+            targetTw.delete(target);
         }
     };
 }
