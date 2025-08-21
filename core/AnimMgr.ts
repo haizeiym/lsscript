@@ -115,30 +115,22 @@ export namespace AnimTw {
         return ttw;
     };
 
-    export const delTgTw = <T extends Component>(target: T, tw?: Tween): void => {
+    export const delTgTw = <T extends Component>(target: T, tw?: any): void => {
         const tws = targetTw.get(target);
         if (!tws) return;
+
         if (!tw) {
-            tws.forEach((tw) => {
-                tw.stop();
-            });
+            for (let i = tws.length; i--; ) {
+                tws[i].stop();
+            }
             targetTw.delete(target);
             return;
         }
-        const index = tws.indexOf(tw);
-        if (index !== -1) {
-            if (index === tws.length - 1) {
-                tws.pop();
-            } else {
-                tws.splice(index, 1);
-            }
 
-            if (tws.length === 0) {
-                targetTw.delete(target);
-            }
-        } else {
-            targetTw.delete(target);
-        }
+        const index = tw instanceof Tween ? tws.indexOf(tw) : tws.findIndex((t) => t.getTarget() === tw);
+        if (index !== -1) tws.splice(index, 1);
+
+        if (tws.length === 0) targetTw.delete(target);
     };
 }
 
