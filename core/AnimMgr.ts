@@ -99,10 +99,10 @@ export namespace AnimTw {
         };
     };
 
-    const targetTw = new Map<Component, Tween[]>();
+    export const targetTw = new Map<Component, Tween[]>();
 
     export const addTgTw = <T1 extends Component, T2 extends object = any>(
-        target?: T1,
+        target: T1,
         target2?: T2 | Tween<T2>
     ): Tween<T2> => {
         let tws = targetTw.get(target);
