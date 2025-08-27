@@ -4,7 +4,7 @@ import { Btn } from "../BtnMgr";
 import { Events } from "../EventMgr";
 import { NCountFn, NTime } from "../NMgr";
 import { ResLoad } from "../ResMgr";
-const { ccclass, property } = _decorator;
+const { ccclass } = _decorator;
 
 @ccclass("BaseComponent")
 export class BaseComponent extends Component {
@@ -20,8 +20,8 @@ export class BaseComponent extends Component {
     }
 
     private _bindUis: BindUI[] = null;
-
     private _countFns: NCountFn[] = null;
+    private _extraChilds: BaseComponent[] = null;
 
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
@@ -110,12 +110,18 @@ export class BaseComponent extends Component {
     }
 
     public resetComponent() {
+        this._clearExtraChilds();
         this._removeAllTime();
         Events.clearTarget(this);
         Btn.removeTargetBtnCallback(this);
         this.MData = null;
-        this.clearCountFn();
-        this.clearUI();
+        this._clearCountFn();
+        this._clearUI();
+    }
+
+    public addExtraChild(child: BaseComponent) {
+        this._extraChilds ??= [];
+        this._extraChilds.push(child);
     }
 
     public NodeDestroy() {
@@ -130,7 +136,15 @@ export class BaseComponent extends Component {
         }
     }
 
-    private clearCountFn() {
+    protected _clearExtraChilds() {
+        if (!this._extraChilds?.length) return;
+        for (let i = this._extraChilds.length - 1; i >= 0; i--) {
+            this._extraChilds[i].NodeDestroy();
+        }
+        this._extraChilds = null;
+    }
+
+    private _clearCountFn() {
         if (!this._countFns) return;
         for (const countFn of this._countFns) {
             countFn.reset();
@@ -139,7 +153,7 @@ export class BaseComponent extends Component {
         this._countFns = null;
     }
 
-    private clearUI() {
+    private _clearUI() {
         if (!this._bindUis) return;
         for (const bUI of this._bindUis) {
             bUI.Clear();
