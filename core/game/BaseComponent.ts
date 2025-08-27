@@ -124,9 +124,10 @@ export class BaseComponent extends Component {
         const index = this._extraChilds.indexOf(child);
         if (index !== -1) {
             this._extraChilds[index].NodeDestroy();
-            this._extraChilds.splice(index, 1);
+            this._extraChilds[index] = child;
+        } else {
+            this._extraChilds.push(child);
         }
-        this._extraChilds.push(child);
     }
 
     public NodeDestroy() {
