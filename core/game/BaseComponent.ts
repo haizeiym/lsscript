@@ -121,6 +121,11 @@ export class BaseComponent extends Component {
 
     public addExtraChild(child: BaseComponent) {
         this._extraChilds ??= [];
+        const index = this._extraChilds.indexOf(child);
+        if (index !== -1) {
+            this._extraChilds[index].NodeDestroy();
+            this._extraChilds.splice(index, 1);
+        }
         this._extraChilds.push(child);
     }
 
