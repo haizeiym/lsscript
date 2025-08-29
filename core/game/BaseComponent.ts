@@ -193,11 +193,11 @@ export class BaseComponent extends Component {
             ResLoad.prefab(BName, PPath).then((prefab) => {
                 if (args instanceof Node) {
                     if (!args.isValid) {
-                        return Promise.reject(null);
+                        return Promise.reject("args is not valid");
                     }
                 } else {
                     if (!args.parent?.isValid) {
-                        return Promise.reject(null);
+                        return Promise.reject("args.parent is not valid");
                     }
                     if (!args.bundleName) {
                         args.bundleName = BName;
@@ -210,8 +210,8 @@ export class BaseComponent extends Component {
                 component.setInit(args);
                 return component;
             })
-        ).catch(() => {
-            console.warn(`asyncCreate BName=${BName} PPath=${PPath}`);
+        ).catch((err) => {
+            console.warn(`asyncCreate BName=${BName} PPath=${PPath} err=${err}`);
             return null;
         });
     }
