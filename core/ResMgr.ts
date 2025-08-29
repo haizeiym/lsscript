@@ -17,11 +17,13 @@ export namespace ResLoad {
     const _assetMap = new Map<string, unknown>();
 
     const getBundle = (bName: string, version: string | null = null): Promise<AssetManager.Bundle> => {
-        return new Promise((resolve) => {
-            let db = assetManager.getBundle(bName);
-            if (db) {
-                resolve(db);
-            } else {
+        let db = assetManager.getBundle(bName);
+        if (db) {
+            return Promise.resolve(db);
+        }
+
+        return Promise.resolve(
+            new Promise<AssetManager.Bundle>((resolve) => {
                 assetManager.loadBundle(
                     bName,
                     !version ? null : { version },
@@ -33,8 +35,8 @@ export namespace ResLoad {
                         }
                     }
                 );
-            }
-        });
+            })
+        );
     };
 
     /**
@@ -60,25 +62,27 @@ export namespace ResLoad {
             }
         }
 
-        return new Promise((resolve) => {
+        return Promise.resolve(
             getBundle(bName, version).then((bundle) => {
                 if (!bundle) {
                     console.warn(`res load error: bName:${bName}-resName:${resName}-version:${version}`);
-                    resolve(null);
-                    return;
+                    return Promise.resolve(null);
                 }
-                bundle.load(resName, resType, null, (err: Error, data: T) => {
-                    if (err) {
-                        resolve(null);
-                    } else {
-                        if (isCache) {
-                            _assetMap.set(`${bName}_${resName}_${version || ""}`, data);
+
+                return new Promise<T>((resolve) => {
+                    bundle.load(resName, resType, null, (err: Error, data: T) => {
+                        if (err) {
+                            resolve(null);
+                        } else {
+                            if (isCache) {
+                                _assetMap.set(`${bName}_${resName}_${version || ""}`, data);
+                            }
+                            resolve(data);
                         }
-                        resolve(data);
-                    }
+                    });
                 });
-            });
-        });
+            })
+        );
     };
 
     /**
@@ -111,23 +115,25 @@ export namespace ResLoad {
         onProgress?: Function,
         version: string | null = null
     ): Promise<T[]> => {
-        return new Promise((resolve) => {
+        return Promise.resolve(
             getBundle(bName, version).then((bundle) => {
-                bundle.loadDir(
-                    resName,
-                    (finish: number, total: number, item: any) => {
-                        onProgress && onProgress(finish, total, item);
-                    },
-                    (err: Error, data: T[]) => {
-                        if (err) {
-                            resolve(null);
-                        } else {
-                            resolve(data);
+                return new Promise<T[]>((resolve) => {
+                    bundle.loadDir(
+                        resName,
+                        (finish: number, total: number, item: any) => {
+                            onProgress && onProgress(finish, total, item);
+                        },
+                        (err: Error, data: T[]) => {
+                            if (err) {
+                                resolve(null);
+                            } else {
+                                resolve(data);
+                            }
                         }
-                    }
-                );
-            });
-        });
+                    );
+                });
+            })
+        );
     };
 
     /**
@@ -154,27 +160,29 @@ export namespace ResLoad {
                 return Promise.resolve(assets);
             }
         }
-        return new Promise((resolve) => {
+        return Promise.resolve(
             getBundle(bName, version).then((bundle) => {
-                bundle.loadDir(
-                    resName,
-                    resType,
-                    (finish: number, total: number, item: any) => {
-                        onProgress && onProgress(finish, total, item);
-                    },
-                    (err: Error, data: T[]) => {
-                        if (err) {
-                            resolve(null);
-                        } else {
-                            if (isCache) {
-                                _assetsMap.set(`${bName}_${resName}_${version || ""}`, data);
+                return new Promise<T[]>((resolve) => {
+                    bundle.loadDir(
+                        resName,
+                        resType,
+                        (finish: number, total: number, item: any) => {
+                            onProgress && onProgress(finish, total, item);
+                        },
+                        (err: Error, data: T[]) => {
+                            if (err) {
+                                resolve(null);
+                            } else {
+                                if (isCache) {
+                                    _assetsMap.set(`${bName}_${resName}_${version || ""}`, data);
+                                }
+                                resolve(data);
                             }
-                            resolve(data);
                         }
-                    }
-                );
-            });
-        });
+                    );
+                });
+            })
+        );
     };
 
     /**
