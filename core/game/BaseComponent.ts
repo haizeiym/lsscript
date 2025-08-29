@@ -188,11 +188,11 @@ export class BaseComponent extends Component {
             ResLoad.prefab(BName, PPath).then((prefab) => {
                 if (args instanceof Node) {
                     if (!args.isValid) {
-                        return null;
+                        return Promise.reject(null);
                     }
                 } else {
                     if (!args.parent?.isValid) {
-                        return null;
+                        return Promise.reject(null);
                     }
                     if (!args.bundleName) {
                         args.bundleName = BName;
