@@ -29,6 +29,7 @@ export namespace ResLoad {
                     !version ? null : { version },
                     (err: Error, data: AssetManager.Bundle) => {
                         if (err) {
+                            console.warn(`bName=${bName} load error: ${err}`);
                             resolve(null);
                         } else {
                             resolve(data);
@@ -63,12 +64,7 @@ export namespace ResLoad {
         }
 
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
-                if (!bundle) {
-                    console.warn(`res load error: bName:${bName}-resName:${resName}-version:${version}`);
-                    return Promise.resolve(null);
-                }
-
+            getBundle(bName, version)?.then((bundle) => {
                 return new Promise<T>((resolve) => {
                     bundle.load(resName, resType, null, (err: Error, data: T) => {
                         if (err) {
@@ -116,7 +112,7 @@ export namespace ResLoad {
         version: string | null = null
     ): Promise<T[]> => {
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
+            getBundle(bName, version)?.then((bundle) => {
                 return new Promise<T[]>((resolve) => {
                     bundle.loadDir(
                         resName,
@@ -161,7 +157,7 @@ export namespace ResLoad {
             }
         }
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
+            getBundle(bName, version)?.then((bundle) => {
                 return new Promise<T[]>((resolve) => {
                     bundle.loadDir(
                         resName,

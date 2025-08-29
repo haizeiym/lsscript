@@ -183,7 +183,12 @@ export class BaseComponent extends Component {
 
     protected _start() {}
 
-    public static asyncCreate(BName: string, PPath: string, args: any, mData?: any): Promise<BaseComponent | null> {
+    public static async asyncCreate(
+        BName: string,
+        PPath: string,
+        args: any,
+        mData?: any
+    ): Promise<BaseComponent | null> {
         return Promise.resolve(
             ResLoad.prefab(BName, PPath).then((prefab) => {
                 if (args instanceof Node) {
@@ -205,7 +210,10 @@ export class BaseComponent extends Component {
                 component.setInit(args);
                 return component;
             })
-        );
+        ).catch(() => {
+            console.warn(`asyncCreate BName=${BName} PPath=${PPath}`);
+            return null;
+        });
     }
 
     public static syncCreate<T extends BaseComponent>(pn: Prefab | Node, args: any, mData?: any): T {
