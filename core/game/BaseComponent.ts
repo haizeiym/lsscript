@@ -189,31 +189,31 @@ export class BaseComponent extends Component {
         args: any,
         mData?: any
     ): Promise<BaseComponent | null> {
-        return Promise.resolve(
-            ResLoad.prefab(BName, PPath).then((prefab) => {
-                if (args instanceof Node) {
-                    if (!args.isValid) {
-                        return Promise.reject("args is not valid");
-                    }
-                } else {
-                    if (!args.parent?.isValid) {
-                        return Promise.reject("args.parent is not valid");
-                    }
-                    if (!args.bundleName) {
-                        args.bundleName = BName;
-                    }
+        try {
+            const prefab = await ResLoad.prefab(BName, PPath);
+            if (args instanceof Node) {
+                if (!args.isValid) {
+                    throw new Error("self isNotValid");
                 }
-                const component = instantiate(prefab).getComponent(BaseComponent);
-                if (mData) {
-                    component.MData = Object.assign(Object.create(null), component.MData, mData);
+            } else {
+                if (!args.parent?.isValid) {
+                    throw new Error("parent isNotValid");
                 }
-                component.setInit(args);
-                return component;
-            })
-        ).catch((err) => {
+                if (!args.bundleName) {
+                    args.bundleName = BName;
+                }
+            }
+
+            const component = instantiate(prefab).getComponent(BaseComponent);
+            if (mData) {
+                component.MData = Object.assign(Object.create(null), component.MData, mData);
+            }
+            component.setInit(args);
+            return component;
+        } catch (err) {
             console.warn(`asyncCreate BName=${BName} PPath=${PPath} err=${err}`);
             return null;
-        });
+        }
     }
 
     public static syncCreate<T extends BaseComponent>(pn: Prefab | Node, args: any, mData?: any): T {
