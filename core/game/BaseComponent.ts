@@ -55,8 +55,8 @@ export class BaseComponent extends Component {
         return NTime.addObjTimeOnce(this, duration * 1000, callback);
     }
 
-    protected _removeTime(id: number) {
-        NTime.removeObjTimeById(this, id);
+    protected _removeTime(id: number): number {
+        return NTime.removeObjTimeById(this, id);
     }
 
     protected _removeAllTime() {
