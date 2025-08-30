@@ -192,13 +192,11 @@ export class BaseComponent extends Component {
         const prefab = await ResLoad.prefab(BName, PPath);
         if (args instanceof Node) {
             if (!args.isValid) {
-                console.warn(`asyncCreate BName=${BName} PPath=${PPath} self isNotValid`);
-                return null;
+                return Promise.reject(`asyncCreate BName=${BName} PPath=${PPath} self isNotValid`);
             }
         } else {
             if (!args.parent?.isValid) {
-                console.warn(`asyncCreate BName=${BName} PPath=${PPath} parent isNotValid`);
-                return null;
+                return Promise.reject(`asyncCreate BName=${BName} PPath=${PPath} parent isNotValid`);
             }
             if (!args.bundleName) {
                 args.bundleName = BName;

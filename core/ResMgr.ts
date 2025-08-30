@@ -23,14 +23,13 @@ export namespace ResLoad {
         }
 
         return Promise.resolve(
-            new Promise<AssetManager.Bundle>((resolve) => {
+            new Promise<AssetManager.Bundle>((resolve, reject) => {
                 assetManager.loadBundle(
                     bName,
                     !version ? null : { version },
                     (err: Error, data: AssetManager.Bundle) => {
                         if (err) {
-                            console.warn(`bName=${bName} load error: ${err}`);
-                            resolve(null);
+                            reject(`bName=${bName} load error: ${err}`);
                         } else {
                             resolve(data);
                         }
@@ -64,11 +63,11 @@ export namespace ResLoad {
         }
 
         return Promise.resolve(
-            getBundle(bName, version)?.then((bundle) => {
-                return new Promise<T>((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                return new Promise<T>((resolve, reject) => {
                     bundle.load(resName, resType, null, (err: Error, data: T) => {
                         if (err) {
-                            resolve(null);
+                            reject(`bName=${bName} resName=${resName} res error: ${err}`);
                         } else {
                             if (isCache) {
                                 _assetMap.set(`${bName}_${resName}_${version || ""}`, data);
@@ -112,8 +111,8 @@ export namespace ResLoad {
         version: string | null = null
     ): Promise<T[]> => {
         return Promise.resolve(
-            getBundle(bName, version)?.then((bundle) => {
-                return new Promise<T[]>((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                return new Promise<T[]>((resolve, reject) => {
                     bundle.loadDir(
                         resName,
                         (finish: number, total: number, item: any) => {
@@ -121,7 +120,7 @@ export namespace ResLoad {
                         },
                         (err: Error, data: T[]) => {
                             if (err) {
-                                resolve(null);
+                                reject(`bName=${bName} resName=${resName} dir error: ${err}`);
                             } else {
                                 resolve(data);
                             }
@@ -157,8 +156,8 @@ export namespace ResLoad {
             }
         }
         return Promise.resolve(
-            getBundle(bName, version)?.then((bundle) => {
-                return new Promise<T[]>((resolve) => {
+            getBundle(bName, version).then((bundle) => {
+                return new Promise<T[]>((resolve, reject) => {
                     bundle.loadDir(
                         resName,
                         resType,
@@ -167,7 +166,7 @@ export namespace ResLoad {
                         },
                         (err: Error, data: T[]) => {
                             if (err) {
-                                resolve(null);
+                                reject(`bName=${bName} resName=${resName} dirT error: ${err}`);
                             } else {
                                 if (isCache) {
                                     _assetsMap.set(`${bName}_${resName}_${version || ""}`, data);
