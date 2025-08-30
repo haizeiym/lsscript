@@ -189,31 +189,28 @@ export class BaseComponent extends Component {
         args: any,
         mData?: any
     ): Promise<BaseComponent | null> {
-        try {
-            const prefab = await ResLoad.prefab(BName, PPath);
-            if (args instanceof Node) {
-                if (!args.isValid) {
-                    throw new Error("self isNotValid");
-                }
-            } else {
-                if (!args.parent?.isValid) {
-                    throw new Error("parent isNotValid");
-                }
-                if (!args.bundleName) {
-                    args.bundleName = BName;
-                }
+        const prefab = await ResLoad.prefab(BName, PPath);
+        if (args instanceof Node) {
+            if (!args.isValid) {
+                console.warn(`asyncCreate BName=${BName} PPath=${PPath} self isNotValid`);
+                return null;
             }
-
-            const component = instantiate(prefab).getComponent(BaseComponent);
-            if (mData) {
-                component.MData = Object.assign(Object.create(null), component.MData, mData);
+        } else {
+            if (!args.parent?.isValid) {
+                console.warn(`asyncCreate BName=${BName} PPath=${PPath} parent isNotValid`);
+                return null;
             }
-            component.setInit(args);
-            return component;
-        } catch (err) {
-            console.warn(`asyncCreate BName=${BName} PPath=${PPath} err=${err}`);
-            return null;
+            if (!args.bundleName) {
+                args.bundleName = BName;
+            }
         }
+
+        const component = instantiate(prefab).getComponent(BaseComponent);
+        if (mData) {
+            component.MData = Object.assign(Object.create(null), component.MData, mData);
+        }
+        component.setInit(args);
+        return component;
     }
 
     public static syncCreate<T extends BaseComponent>(pn: Prefab | Node, args: any, mData?: any): T {
