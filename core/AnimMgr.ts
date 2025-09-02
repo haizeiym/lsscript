@@ -121,7 +121,7 @@ export namespace AnimTw {
 
         if (!tw) {
             tws.forEach((tween) => {
-                destroyTween(tween);
+                tween.stop();
             });
             targetTw.delete(target);
             return;
@@ -129,22 +129,10 @@ export namespace AnimTw {
 
         const index = tw instanceof Tween ? tws.indexOf(tw) : tws.findIndex((t) => t.getTarget() === tw);
         if (index !== -1) {
-            destroyTween(tws.splice(index, 1)[0]);
+            tws.splice(index, 1)[0].stop();
             if (tws.length === 0) {
                 targetTw.delete(target);
             }
-        }
-    };
-
-    const destroyTween = (tween: Tween): void => {
-        try {
-            if (tween.getTarget() instanceof Node) {
-                tween.destroySelf();
-            } else {
-                tween.stop();
-            }
-        } catch (error) {
-            console.warn("Failed to destroy tween:", error);
         }
     };
 }
