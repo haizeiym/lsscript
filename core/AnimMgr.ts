@@ -138,7 +138,78 @@ export namespace AnimTw {
 }
 
 export namespace AnimFa {
-    const compTimeIdMap = new Map<Sprite, number>();
+    const compAnimStateMap = new Map<
+        Sprite,
+        {
+            frames: SpriteFrame[];
+            loopcount: number;
+            frameTime: number;
+            defFrameIndex: number;
+            curCount: number;
+            allCount: number;
+            endCallBack?: (comp: Sprite) => void; //所有循环结束回调
+            oneEndCallBack?: (comp?: Sprite) => void; //一次循环后回调，无限循环不调用
+            frameCallBack?: (comp: Sprite, frameIndex: number) => void; //每帧回调
+        }
+    >();
+
+    const globalFrameCache = new Map<string, number>();
+
+    const getFrameNumber = (name: string): number => {
+        if (globalFrameCache.has(name)) {
+            return globalFrameCache.get(name);
+        }
+        const match = name.match(/\d+(?=\D*$)/);
+        if (!match) {
+            console.warn(`Invalid frame name format: ${name}`);
+            return 0;
+        }
+        const num = parseInt(match[0]);
+        if (isNaN(num)) {
+            console.warn(`Failed to parse number from: ${name}`);
+            return 0;
+        }
+        globalFrameCache.set(name, num);
+        return num;
+    };
+
+    const playNextFrame = (comp: Sprite): void => {
+        const state = compAnimStateMap.get(comp);
+        if (!state || !comp?.isValid) {
+            compAnimStateMap.delete(comp);
+            NTime.removeObjTime(comp);
+            return;
+        }
+
+        const { frames, loopcount, defFrameIndex, curCount, allCount, endCallBack, oneEndCallBack, frameCallBack } =
+            state;
+
+        state.curCount = curCount + 1;
+
+        if (state.curCount >= allCount) {
+            if (loopcount > 0) {
+                state.loopcount = loopcount - 1;
+                if (state.loopcount <= 0) {
+                    compAnimStateMap.delete(comp);
+                    NTime.removeObjTime(comp);
+                    endCallBack?.(comp);
+                    return;
+                } else {
+                    state.curCount = defFrameIndex;
+                    comp.spriteFrame = frames[state.curCount];
+                    frameCallBack?.(comp, state.curCount);
+                    oneEndCallBack?.(comp);
+                }
+            } else {
+                state.curCount = defFrameIndex;
+                comp.spriteFrame = frames[state.curCount];
+                frameCallBack?.(comp, state.curCount);
+            }
+        } else {
+            comp.spriteFrame = frames[state.curCount];
+            frameCallBack?.(comp, state.curCount);
+        }
+    };
 
     export const play = (opt: {
         comp: Sprite | Node;
@@ -161,82 +232,54 @@ export namespace AnimFa {
             frameCallBack = null
         } = opt;
 
-        // 获取Sprite组件
         if (comp instanceof Node) {
             comp = comp.getComponent(Sprite);
         }
-        if (!comp?.isValid) return;
 
-        // 清理之前的定时器
-        if (compTimeIdMap.delete(comp)) {
-            NTime.removeObjTime(comp);
+        if (!comp?.isValid) {
+            console.warn("Sprite组件无效");
+            return;
         }
 
-        // 优化帧排序：使用缓存避免重复计算
-        const frameCache = new Map<string, number>();
-        frames.sort((a, b) => {
-            // 使用缓存获取数字
-            const getFrameNumber = (name: string): number => {
-                if (frameCache.has(name)) {
-                    return frameCache.get(name);
-                }
-                const match = name.match(/\d+(?=\D*$)/);
-                if (!match) {
-                    console.warn(`Invalid frame name format: ${name}`);
-                    return 0;
-                }
-                const num = parseInt(match[0]);
-                if (isNaN(num)) {
-                    console.warn(`Failed to parse number from: ${name}`);
-                    return 0;
-                }
-                frameCache.set(name, num);
-                return num;
-            };
+        if (!frames || frames.length === 0) {
+            console.warn("frames数组不能为空");
+            return;
+        }
 
+        if (frameTime <= 0) {
+            console.warn("frameTime必须大于0");
+            frameTime = 0.1;
+        }
+
+        stop(comp);
+
+        const sortedFrames = [...frames].sort((a, b) => {
             return getFrameNumber(a.name) - getFrameNumber(b.name);
         });
 
-        const allCount = frames.length;
-        let curCount = Math.min(defFrameIndex, allCount - 1); // 确保初始索引有效
-        comp.spriteFrame = frames[curCount];
-        frameCallBack?.(comp, curCount);
-        // 优化定时器回调
-        const timeId = NTime.addObjTime(comp, frameTime * 1000, () => {
-            if (!comp?.isValid) {
-                if (compTimeIdMap.delete(comp)) {
-                    NTime.removeObjTime(comp);
-                }
-                return;
-            }
+        const allCount = sortedFrames.length;
+        const curCount = Math.max(0, Math.min(defFrameIndex, allCount - 1));
 
-            curCount++;
-            if (curCount >= allCount) {
-                if (loopcount > 0) {
-                    --loopcount;
-                    if (loopcount <= 0) {
-                        if (compTimeIdMap.delete(comp)) {
-                            NTime.removeObjTime(comp);
-                        }
-                        endCallBack?.(comp);
-                    } else {
-                        curCount = defFrameIndex;
-                        comp.spriteFrame = frames[curCount];
-                        frameCallBack?.(comp, curCount);
-                        oneEndCallBack?.(comp);
-                    }
-                } else {
-                    curCount = defFrameIndex;
-                    comp.spriteFrame = frames[curCount];
-                    frameCallBack?.(comp, curCount);
-                }
-            } else {
-                comp.spriteFrame = frames[curCount];
-                frameCallBack?.(comp, curCount);
-            }
+        compAnimStateMap.set(comp, {
+            frames: sortedFrames,
+            loopcount,
+            frameTime,
+            defFrameIndex,
+            curCount,
+            allCount,
+            endCallBack,
+            oneEndCallBack,
+            frameCallBack
         });
 
-        compTimeIdMap.set(comp, timeId);
+        comp.spriteFrame = sortedFrames[curCount];
+        frameCallBack?.(comp, curCount);
+
+        if (comp?.isValid) {
+            NTime.addObjTime(comp, frameTime * 1000, () => playNextFrame(comp));
+        } else {
+            compAnimStateMap.delete(comp);
+        }
     };
 
     export const stop = (comp: Sprite | Node): void => {
@@ -244,15 +287,15 @@ export namespace AnimFa {
             comp = comp.getComponent(Sprite);
         }
         if (!comp?.isValid) return;
-        if (compTimeIdMap.delete(comp)) {
-            NTime.removeObjTime(comp);
-        }
+
+        compAnimStateMap.delete(comp);
+        NTime.removeObjTime(comp);
     };
 
     export const stopAll = (): void => {
-        compTimeIdMap.forEach((timeId, comp) => {
+        compAnimStateMap.forEach((_, comp) => {
             NTime.removeObjTime(comp);
         });
-        compTimeIdMap.clear();
+        compAnimStateMap.clear();
     };
 }
