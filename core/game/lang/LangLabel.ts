@@ -11,6 +11,8 @@ const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 export class LangLabel extends Component {
     private _langKey: string = ""; //格式：Langt开头
 
+    private _langOption: any = null;
+
     public get langKey(): string {
         return this._langKey;
     }
@@ -18,6 +20,14 @@ export class LangLabel extends Component {
     public set langKey(value: string) {
         this._langKey = value;
         this.updateText();
+    }
+
+    public get langOption(): any {
+        return this._langOption;
+    }
+
+    public set langOption(value: any) {
+        this._langOption = value;
     }
 
     private _label: Label = null;
@@ -37,7 +47,7 @@ export class LangLabel extends Component {
 
     private updateText() {
         if (this._label && this._langKey) {
-            this._label.string = LangMgr.instance.getText(this._langKey);
+            this._label.string = LangMgr.instance.getText(this._langKey, this._langOption);
         }
     }
 }

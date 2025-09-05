@@ -127,9 +127,10 @@ export namespace GG {
          * @param node 节点
          * @param key 多语言key
          */
-        static changtLangKey(node: Node, key: string) {
+        static changtLangKey(node: Node, key: string, option: any = null) {
             let ls = node.getComponent(LangLabel);
             if (ls) {
+                ls.langOption = option;
                 ls.langKey = key;
             }
         }
