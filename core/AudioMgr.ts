@@ -65,7 +65,7 @@ export class AudioMgr {
 
     public static setIsBgmPlaying(isBgmPlaying: boolean) {
         this._isBgmPlaying = isBgmPlaying;
-        if (this._isBgmPlaying) {
+        if (!this._isStop && this._isBgmPlaying) {
             this._audioSource.play();
         } else {
             this._audioSource.pause();
