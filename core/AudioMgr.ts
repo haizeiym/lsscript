@@ -10,7 +10,7 @@ export class AudioMgr {
     private static _isStop: boolean = false;
 
     public static init(): void {
-        if (this._audioSource && this._audioSource.isValid) return;
+        if (this._audioSource?.isValid) return;
         let audioMgr = new Node();
         audioMgr.name = "__audioMgr__";
         director.getScene().addChild(audioMgr);
@@ -43,12 +43,14 @@ export class AudioMgr {
     public static playBgm(sound: AudioClip, loop: boolean = true) {
         if (this._isStop || this._isBgmPlaying) {
             this._audioSource.clip = sound;
+            this._audioSource.loop = loop;
+            this._audioSource.volume = this._bgmVolume;
             return;
         }
         this._audioSource.stop();
         this._audioSource.clip = sound;
-        this._audioSource.volume = this._bgmVolume;
         this._audioSource.loop = loop;
+        this._audioSource.volume = this._bgmVolume;
         this._audioSource.play();
     }
 

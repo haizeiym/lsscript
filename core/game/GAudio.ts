@@ -3,7 +3,7 @@ import { ResLoad } from "../ResMgr";
 
 export namespace GAudio {
     export const bgm = (bName: string, pName: string, loop: boolean = true) => {
-        ResLoad.audioClip(bName, pName).then((sound) => {
+        ResLoad.audioClip(bName, pName, true).then((sound) => {
             if (!sound) {
                 console.warn(`bgm not found: ${bName} ${pName}`);
                 return;
@@ -13,7 +13,7 @@ export namespace GAudio {
     };
 
     export const effect = (bName: string, pName: string, volume: number = AudioMgr.effectVolume) => {
-        ResLoad.audioClip(bName, pName).then((sound) => {
+        ResLoad.audioClip(bName, pName, true).then((sound) => {
             if (!sound) {
                 console.warn(`effect not found: ${bName} ${pName}`);
                 return;
