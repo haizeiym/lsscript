@@ -5,7 +5,6 @@ export class AudioMgr {
 
     private static _effectVolume: number = 1.0;
     private static _bgmVolume: number = 1.0;
-    private static _isBgmPlaying: boolean = false;
     private static _isEffectPlaying: boolean = false;
     private static _isStop: boolean = false;
 
@@ -42,7 +41,7 @@ export class AudioMgr {
 
     public static playBgm(sound: AudioClip, loop: boolean = true) {
         this._audioSource.stop();
-        if (this._isStop || this._isBgmPlaying) {
+        if (this._isStop) {
             this._audioSource.clip = sound;
             this._audioSource.loop = loop;
             this._audioSource.volume = this._bgmVolume;
@@ -55,6 +54,7 @@ export class AudioMgr {
     }
 
     public static setIsStop(isStop: boolean) {
+        if (this._isStop === isStop) return;
         this._isStop = isStop;
         if (this._isStop) {
             this._audioSource.stop();
@@ -63,9 +63,9 @@ export class AudioMgr {
         }
     }
 
-    public static setIsBgmPlaying(isBgmPlaying: boolean) {
-        this._isBgmPlaying = isBgmPlaying;
-        if (!this._isStop && this._isBgmPlaying) {
+    public static setIsPauseBgm(isPlayBgm: boolean) {
+        if (this._isStop) return;
+        if (isPlayBgm) {
             this._audioSource.play();
         } else {
             this._audioSource.pause();
