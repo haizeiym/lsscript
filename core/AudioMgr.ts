@@ -41,13 +41,13 @@ export class AudioMgr {
     }
 
     public static playBgm(sound: AudioClip, loop: boolean = true) {
+        this._audioSource.stop();
         if (this._isStop || this._isBgmPlaying) {
             this._audioSource.clip = sound;
             this._audioSource.loop = loop;
             this._audioSource.volume = this._bgmVolume;
             return;
         }
-        this._audioSource.stop();
         this._audioSource.clip = sound;
         this._audioSource.loop = loop;
         this._audioSource.volume = this._bgmVolume;
