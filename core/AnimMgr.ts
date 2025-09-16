@@ -55,6 +55,8 @@ export namespace AnimSp {
         if (loopcount > 0) {
             spSkeleton.setCompleteListener(() => {
                 if (--loopcount <= 0) {
+                    spSkeleton = spSkeleton as sp.Skeleton;
+                    if (!spSkeleton) return;
                     spSkeleton.skeletonData = null;
                     stop(spSkeleton);
                     endCallBack && endCallBack(spSkeleton);
@@ -276,7 +278,7 @@ export namespace AnimFa {
         frameCallBack?.(comp, curCount);
 
         if (comp?.isValid) {
-            NTime.addObjTime(comp, frameTime * 1000, () => playNextFrame(comp));
+            NTime.addObjTime(comp, frameTime * 1000, () => playNextFrame(comp as Sprite));
         } else {
             compAnimStateMap.delete(comp);
         }
