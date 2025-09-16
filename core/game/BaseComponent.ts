@@ -1,6 +1,6 @@
 import { _decorator, Button, Component, instantiate, Node, Prefab, UIOpacity, UITransform } from "cc";
 import { BindUI } from "../BindUI";
-import { Btn } from "../BtnMgr";
+import { Btn, BtnCallback } from "../BtnMgr";
 import { Events } from "../EventMgr";
 import { NCountFn, NTime } from "../NMgr";
 import { ResLoad } from "../ResMgr";
@@ -89,11 +89,11 @@ export class BaseComponent extends Component {
         return opacity;
     }
 
-    protected _addClick(node: Node | Button, callback: (btn?: Button) => void) {
+    protected _addClick(node: Node | Button, callback: BtnCallback) {
         Btn.clickBtn(this, node, callback);
     }
 
-    protected _addCommonClick(callback: (btn?: Button) => void) {
+    protected _addCommonClick(callback: BtnCallback) {
         Btn.setTargetBtnCallback(this, callback);
     }
 
