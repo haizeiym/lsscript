@@ -26,7 +26,7 @@ export class BaseComponent extends Component {
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
         this.init();
-        beforeParentCall && beforeParentCall(this);
+        beforeParentCall?.(this);
         this.node.setParent(parent);
     }
 

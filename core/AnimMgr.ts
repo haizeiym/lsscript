@@ -45,7 +45,7 @@ export namespace AnimSp {
         const fAnimation = spSkeleton.findAnimation(animName);
         if (!fAnimation) {
             stop(spSkeleton);
-            endCallBack && endCallBack(spSkeleton);
+            endCallBack?.(spSkeleton);
             return null;
         }
         spSkeleton.premultipliedAlpha = premultipliedAlpha;
@@ -53,13 +53,12 @@ export namespace AnimSp {
         spSkeleton.paused = false;
         spSkeleton.setAnimation(0, animName);
         if (loopcount > 0) {
+            const tempSpSkeleton = spSkeleton;
             spSkeleton.setCompleteListener(() => {
                 if (--loopcount <= 0) {
-                    spSkeleton = spSkeleton as sp.Skeleton;
-                    if (!spSkeleton) return;
-                    spSkeleton.skeletonData = null;
-                    stop(spSkeleton);
-                    endCallBack && endCallBack(spSkeleton);
+                    tempSpSkeleton.skeletonData = null;
+                    stop(tempSpSkeleton);
+                    endCallBack?.(tempSpSkeleton);
                 }
             });
         }
@@ -156,6 +155,8 @@ export namespace AnimFa {
     >();
 
     const globalFrameCache = new Map<string, number>();
+
+    let componentCleanupMap = new WeakMap<Sprite, () => void>();
 
     const getFrameNumber = (name: string): number => {
         if (globalFrameCache.has(name)) {
@@ -255,6 +256,25 @@ export namespace AnimFa {
 
         stop(comp);
 
+        if (!componentCleanupMap.has(comp)) {
+            const spriteComp = comp;
+            const cleanup = () => {
+                const state = compAnimStateMap.get(spriteComp);
+                if (state) {
+                    state.endCallBack = null;
+                    state.oneEndCallBack = null;
+                    state.frameCallBack = null;
+                }
+
+                compAnimStateMap.delete(spriteComp);
+                NTime.removeObjTime(spriteComp);
+                componentCleanupMap.delete(spriteComp);
+            };
+
+            componentCleanupMap.set(comp, cleanup);
+            comp.node.on(Node.EventType.NODE_DESTROYED, cleanup);
+        }
+
         const sortedFrames = [...frames].sort((a, b) => {
             return getFrameNumber(a.name) - getFrameNumber(b.name);
         });
@@ -278,7 +298,8 @@ export namespace AnimFa {
         frameCallBack?.(comp, curCount);
 
         if (comp?.isValid) {
-            NTime.addObjTime(comp, frameTime * 1000, () => playNextFrame(comp as Sprite));
+            const tempComp = comp;
+            NTime.addObjTime(tempComp, frameTime * 1000, () => playNextFrame(tempComp));
         } else {
             compAnimStateMap.delete(comp);
         }
@@ -292,12 +313,22 @@ export namespace AnimFa {
 
         compAnimStateMap.delete(comp);
         NTime.removeObjTime(comp);
+        const cleanup = componentCleanupMap.get(comp);
+        if (cleanup) {
+            comp.node.off(Node.EventType.NODE_DESTROYED, cleanup);
+            componentCleanupMap.delete(comp);
+        }
     };
 
     export const stopAll = (): void => {
         compAnimStateMap.forEach((_, comp) => {
             NTime.removeObjTime(comp);
+            const cleanup = componentCleanupMap.get(comp);
+            if (cleanup) {
+                comp.node.off(Node.EventType.NODE_DESTROYED, cleanup);
+            }
         });
         compAnimStateMap.clear();
+        componentCleanupMap = new WeakMap<Sprite, () => void>();
     };
 }
