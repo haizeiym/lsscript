@@ -11,6 +11,7 @@ import {
     SpriteAtlas,
     SpriteFrame
 } from "cc";
+import { DEBUG } from "cc/env";
 
 export namespace ResLoad {
     const _assetsMap = new Map<string, unknown[]>();
@@ -29,7 +30,10 @@ export namespace ResLoad {
                     !version ? null : { version },
                     (err: Error, data: AssetManager.Bundle) => {
                         if (err) {
-                            reject(`bName=${bName} load error: ${err}`);
+                            if (DEBUG) {
+                                console.warn(`bName=${bName} load error: ${err}`);
+                            }
+                            reject(null);
                         } else {
                             resolve(data);
                         }
@@ -67,7 +71,10 @@ export namespace ResLoad {
                 return new Promise<T>((resolve, reject) => {
                     bundle.load(resName, resType, null, (err: Error, data: T) => {
                         if (err) {
-                            reject(`bName=${bName} resName=${resName} res error: ${err}`);
+                            if (DEBUG) {
+                                console.warn(`bName=${bName} resName=${resName} res error: ${err}`);
+                            }
+                            reject(null);
                         } else {
                             if (isCache) {
                                 _assetMap.set(`${bName}_${resName}_${version || ""}`, data);
@@ -120,7 +127,10 @@ export namespace ResLoad {
                         },
                         (err: Error, data: T[]) => {
                             if (err) {
-                                reject(`bName=${bName} resName=${resName} dir error: ${err}`);
+                                if (DEBUG) {
+                                    console.warn(`bName=${bName} resName=${resName} dir error: ${err}`);
+                                }
+                                reject(null);
                             } else {
                                 resolve(data);
                             }
@@ -166,7 +176,10 @@ export namespace ResLoad {
                         },
                         (err: Error, data: T[]) => {
                             if (err) {
-                                reject(`bName=${bName} resName=${resName} dirT error: ${err}`);
+                                if (DEBUG) {
+                                    console.warn(`bName=${bName} resName=${resName} dirT error: ${err}`);
+                                }
+                                reject(null);
                             } else {
                                 if (isCache) {
                                     _assetsMap.set(`${bName}_${resName}_${version || ""}`, data);

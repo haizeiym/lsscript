@@ -1,4 +1,5 @@
 import { _decorator, Button, Component, instantiate, Node, Prefab, UIOpacity, UITransform } from "cc";
+import { DEBUG } from "cc/env";
 import { BindUI } from "../BindUI";
 import { Btn, BtnCallback } from "../BtnMgr";
 import { Events } from "../EventMgr";
@@ -192,11 +193,17 @@ export class BaseComponent extends Component {
         const prefab = await ResLoad.prefab(BName, PPath);
         if (args instanceof Node) {
             if (!args.isValid) {
-                return Promise.reject(`asyncCreate BName=${BName} PPath=${PPath} self isNotValid`);
+                if (DEBUG) {
+                    console.warn(`asyncCreate BName=${BName} PPath=${PPath} self isNotValid`);
+                }
+                return Promise.reject(null);
             }
         } else {
             if (!args.parent?.isValid) {
-                return Promise.reject(`asyncCreate BName=${BName} PPath=${PPath} parent isNotValid`);
+                if (DEBUG) {
+                    console.warn(`asyncCreate BName=${BName} PPath=${PPath} parent isNotValid`);
+                }
+                return Promise.reject(null);
             }
             if (!args.bundleName) {
                 args.bundleName = BName;
