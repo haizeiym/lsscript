@@ -110,6 +110,10 @@ export class BaseComponent extends Component {
         Events.on(eName, callback, this);
     }
 
+    public removeEvent(eName: string, callback: (...args: unknown[]) => void) {
+        Events.off(eName, callback, this);
+    }
+
     public resetComponent() {
         this._clearExtraChilds();
         this._removeAllTime();
