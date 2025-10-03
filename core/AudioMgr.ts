@@ -65,7 +65,7 @@ export class AudioMgr {
     }
 
     public static setIsPauseBgm(isPauseBgm: boolean) {
-        if (this._isStop) return;
+        if (this._isStop || this._isStopBgm) return;
         if (isPauseBgm) {
             this._audioSource.play();
         } else {
@@ -85,6 +85,7 @@ export class AudioMgr {
         if ((this._isStopBgm = isStopBgm)) {
             this._audioSource.stop();
         } else {
+            if (this._isStop) return;
             this._audioSource.play();
         }
     }
