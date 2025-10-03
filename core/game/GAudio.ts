@@ -30,8 +30,20 @@ export namespace GAudio {
         AudioMgr.setIsPauseBgm(isBgmPlaying);
     };
 
-    export const setIsEffectPlaying = (isEffectPlaying: boolean) => {
-        AudioMgr.setIsEffectPlaying(isEffectPlaying);
+    export const setIsStopBgm = (isStopBgm: boolean) => {
+        AudioMgr.setIsStopBgm(isStopBgm);
+    };
+
+    export const getIsStopBgm = () => {
+        return AudioMgr.isStopBgm;
+    };
+
+    export const getIsStopEffect = () => {
+        return AudioMgr.isStopEffect;
+    };
+
+    export const setIsStopEffect = (isStopEffect: boolean) => {
+        AudioMgr.setIsStopEffect(isStopEffect);
     };
 
     export const setEffectVolume = (volume: number) => {

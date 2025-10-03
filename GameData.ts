@@ -1,29 +1,57 @@
 import { sys } from "cc";
 
+const VoiceKey = {
+    isPlayAudio: "is_playAudio",
+    isStopBgm: "is_stopBgm",
+    isStopEffect: "is_stopEffect"
+} as const;
+
 export class GameData {
     public static setSaveData(key: string, value: any) {
-        sys.localStorage.setItem(key, JSON.stringify(value));
+        try {
+            sys.localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+            sys.localStorage.setItem(key, null);
+        }
     }
 
     public static getSaveData(key: string, defaultValue?: any) {
-        return JSON.parse(sys.localStorage.getItem(key) || defaultValue);
+        const value = sys.localStorage.getItem(key);
+        if (value === null) {
+            return defaultValue;
+        }
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            return defaultValue;
+        }
     }
 
-    public static setBoolSaveData(key: string, value: boolean) {
-        this.setSaveData(key, value ? 1 : 0);
-    }
-
-    public static getBoolSaveData(key: string, defaultValue?: boolean) {
-        return this.getSaveData(key, defaultValue ? 1 : 0) === 1;
-    }
-
-    //全局存储是否播放音效
+    //全局存储是否播放音乐/音效
     public static setVoiceState(isPlayAudio: boolean) {
-        this.setSaveData("isPlayAudio", isPlayAudio ? 1 : 0);
+        this.setSaveData(VoiceKey.isPlayAudio, isPlayAudio ? 1 : 0);
     }
 
     public static getVoiceState(): boolean {
-        return this.getSaveData("isPlayAudio", 1) === 1;
+        return this.getSaveData(VoiceKey.isPlayAudio, 0) === 1;
+    }
+
+    //全局存储是否停止背景音乐
+    public static setStopBgm(isStopBgm: boolean) {
+        this.setSaveData(VoiceKey.isStopBgm, isStopBgm ? 1 : 0);
+    }
+
+    public static getStopBgm(): boolean {
+        return this.getSaveData(VoiceKey.isStopBgm, 0) === 1;
+    }
+
+    //全局存储是否停止音效
+    public static setStopEffect(isStopEffect: boolean) {
+        this.setSaveData(VoiceKey.isStopEffect, isStopEffect ? 1 : 0);
+    }
+
+    public static getStopEffect(): boolean {
+        return this.getSaveData(VoiceKey.isStopEffect, 0) === 1;
     }
 }
 

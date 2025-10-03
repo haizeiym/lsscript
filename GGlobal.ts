@@ -70,6 +70,27 @@ export namespace GG {
             GAudio.setIsStop(!value);
         }
 
+        static get isStopBgm(): boolean {
+            return GameData.getStopBgm();
+        }
+
+        static set isStopBgm(value: boolean) {
+            GameData.setStopBgm(value);
+            GAudio.setIsStopBgm(value);
+        }
+
+        static get isStopEffect(): boolean {
+            const isStopEffect = GameData.getStopEffect();
+            GameData.setStopEffect(isStopEffect);
+            GAudio.setIsStopEffect(isStopEffect);
+            return isStopEffect;
+        }
+
+        static set isStopEffect(value: boolean) {
+            GameData.setStopEffect(value);
+            GAudio.setIsStopEffect(value);
+        }
+
         /**
          * 手动添加多语言图片,有LangSprite操作要在方法之后
          * @param nodes 节点数组

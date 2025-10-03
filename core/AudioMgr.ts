@@ -5,7 +5,8 @@ export class AudioMgr {
 
     private static _effectVolume: number = 1.0;
     private static _bgmVolume: number = 1.0;
-    private static _isEffectPlaying: boolean = false;
+    private static _isStopEffect: boolean = false;
+    private static _isStopBgm: boolean = false;
     private static _isStop: boolean = false;
 
     public static init(): void {
@@ -35,13 +36,13 @@ export class AudioMgr {
     }
 
     public static playEffect(sound: AudioClip, volume: number = this._effectVolume) {
-        if (this._isStop || this._isEffectPlaying) return;
+        if (this._isStop || this._isStopEffect) return;
         this._audioSource.playOneShot(sound, volume);
     }
 
     public static playBgm(sound: AudioClip, loop: boolean = true) {
         this._audioSource.stop();
-        if (this._isStop) {
+        if (this._isStop || this._isStopBgm) {
             this._audioSource.clip = sound;
             this._audioSource.loop = loop;
             this._audioSource.volume = this._bgmVolume;
@@ -63,16 +64,32 @@ export class AudioMgr {
         }
     }
 
-    public static setIsPauseBgm(isPlayBgm: boolean) {
+    public static setIsPauseBgm(isPauseBgm: boolean) {
         if (this._isStop) return;
-        if (isPlayBgm) {
+        if (isPauseBgm) {
             this._audioSource.play();
         } else {
             this._audioSource.pause();
         }
     }
 
-    public static setIsEffectPlaying(isEffectPlaying: boolean) {
-        this._isEffectPlaying = isEffectPlaying;
+    public static setIsStopEffect(isStopEffect: boolean) {
+        this._isStopEffect = isStopEffect;
+    }
+
+    public static get isStopEffect() {
+        return this._isStopEffect;
+    }
+
+    public static setIsStopBgm(isStopBgm: boolean) {
+        if ((this._isStopBgm = isStopBgm)) {
+            this._audioSource.stop();
+        } else {
+            this._audioSource.play();
+        }
+    }
+
+    public static get isStopBgm() {
+        return this._isStopBgm;
     }
 }
