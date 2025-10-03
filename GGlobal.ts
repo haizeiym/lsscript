@@ -55,39 +55,39 @@ export namespace GG {
 
     export class clsExtra {
         private static _initAudio: boolean = false;
-        private static _isPlayAudio: boolean = false;
-        static get isPlayAudio(): boolean {
+        private static _isStopAudio: boolean = false;
+        static get isStopAudio(): boolean {
             if (!this._initAudio) {
                 this._initAudio = true;
-                this._isPlayAudio = GameData.getVoiceState();
+                this._isStopAudio = GameData.getIsStopAudio();
             }
-            return this._isPlayAudio;
+            return this._isStopAudio;
         }
 
-        static set isPlayAudio(value: boolean) {
-            this._isPlayAudio = value;
-            GameData.setVoiceState(value);
-            GAudio.setIsStop(!value);
+        static set isStopAudio(value: boolean) {
+            this._isStopAudio = value;
+            GameData.setIsStopAudio(value);
+            GAudio.setIsStop(value);
         }
 
         static get isStopBgm(): boolean {
-            return GameData.getStopBgm();
+            return GameData.getIsStopBgm();
         }
 
         static set isStopBgm(value: boolean) {
-            GameData.setStopBgm(value);
+            GameData.setIsStopBgm(value);
             GAudio.setIsStopBgm(value);
         }
 
         static get isStopEffect(): boolean {
-            const isStopEffect = GameData.getStopEffect();
-            GameData.setStopEffect(isStopEffect);
+            const isStopEffect = GameData.getIsStopEffect();
+            GameData.setIsStopEffect(isStopEffect);
             GAudio.setIsStopEffect(isStopEffect);
             return isStopEffect;
         }
 
         static set isStopEffect(value: boolean) {
-            GameData.setStopEffect(value);
+            GameData.setIsStopEffect(value);
             GAudio.setIsStopEffect(value);
         }
 

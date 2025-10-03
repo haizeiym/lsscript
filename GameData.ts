@@ -1,7 +1,7 @@
 import { sys } from "cc";
 
 const VoiceKey = {
-    isPlayAudio: "is_playAudio",
+    isStopAudio: "is_stopAudio",
     isStopBgm: "is_stopBgm",
     isStopEffect: "is_stopEffect"
 } as const;
@@ -28,29 +28,29 @@ export class GameData {
     }
 
     //全局存储是否播放音乐/音效
-    public static setVoiceState(isPlayAudio: boolean) {
-        this.setSaveData(VoiceKey.isPlayAudio, isPlayAudio ? 1 : 0);
+    public static setIsStopAudio(isStopAudio: boolean) {
+        this.setSaveData(VoiceKey.isStopAudio, isStopAudio ? 1 : 0);
     }
 
-    public static getVoiceState(): boolean {
-        return this.getSaveData(VoiceKey.isPlayAudio, 0) === 1;
+    public static getIsStopAudio(): boolean {
+        return this.getSaveData(VoiceKey.isStopAudio, 0) === 1;
     }
 
     //全局存储是否停止背景音乐
-    public static setStopBgm(isStopBgm: boolean) {
+    public static setIsStopBgm(isStopBgm: boolean) {
         this.setSaveData(VoiceKey.isStopBgm, isStopBgm ? 1 : 0);
     }
 
-    public static getStopBgm(): boolean {
+    public static getIsStopBgm(): boolean {
         return this.getSaveData(VoiceKey.isStopBgm, 0) === 1;
     }
 
     //全局存储是否停止音效
-    public static setStopEffect(isStopEffect: boolean) {
+    public static setIsStopEffect(isStopEffect: boolean) {
         this.setSaveData(VoiceKey.isStopEffect, isStopEffect ? 1 : 0);
     }
 
-    public static getStopEffect(): boolean {
+    public static getIsStopEffect(): boolean {
         return this.getSaveData(VoiceKey.isStopEffect, 0) === 1;
     }
 }
