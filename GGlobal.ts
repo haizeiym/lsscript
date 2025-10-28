@@ -1,4 +1,4 @@
-import { Button, Node, view, Widget } from "cc";
+import { Button, gfx, Node, view, Widget } from "cc";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
 import { LangSprite } from "./core/game/lang/LangSprite";
@@ -50,6 +50,42 @@ export namespace GG {
                 this.clientTime = this.serverTime;
             }
             return isSync;
+        }
+    }
+
+    export class webgl {
+        static gl(): WebGLRenderingContext | WebGL2RenderingContext {
+            return gfx.Device.canvas.getContext("webgl2") || gfx.Device.canvas.getContext("webgl");
+        }
+
+        static isASTCSupported(gl?: WebGLRenderingContext | WebGL2RenderingContext) {
+            if (!gl) {
+                gl = this.gl();
+            }
+            const ext =
+                gl.getExtension("WEBGL_compressed_texture_astc") ||
+                gl.getExtension("WEBKIT_WEBGL_compressed_texture_astc") ||
+                gl.getExtension("MOZ_WEBGL_compressed_texture_astc");
+
+            if (!ext) {
+                return false;
+            }
+
+            return true;
+        }
+
+        static isPVRTCSupported(gl?: WebGLRenderingContext | WebGL2RenderingContext) {
+            if (!gl) {
+                gl = this.gl();
+            }
+            const ext =
+                gl.getExtension("WEBGL_compressed_texture_pvrtc") ||
+                gl.getExtension("WEBKIT_WEBGL_compressed_texture_pvrtc");
+
+            if (!ext) {
+                return false;
+            }
+            return true;
         }
     }
 
