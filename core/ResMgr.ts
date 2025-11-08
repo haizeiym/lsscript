@@ -14,10 +14,78 @@ import {
 import { DEBUG } from "cc/env";
 
 export namespace ResLoad {
+    type BundleArgs = {
+        bName: string;
+        version?: string | null;
+        isUseRemote?: boolean;
+    };
+
+    type ResArgs = {
+        bName: string;
+        resName: string;
+        isCache?: boolean;
+        version?: string | null;
+        isUseRemote?: boolean;
+    };
+
+    type ResArgsT<T extends Asset> = ResArgs & {
+        resType: new (...args: any[]) => T;
+    };
+
+    type ResArgsProgress<T extends Asset> = ResArgsT<T> & {
+        onProgress?: (finish: number, total: number, item?: any) => void;
+    };
+
     const _assetsMap = new Map<string, unknown[]>();
     const _assetMap = new Map<string, unknown>();
 
-    const getBundle = (bName: string, version: string | null = null): Promise<AssetManager.Bundle> => {
+    /**
+     * 使用远程资源版本号
+     * @param url 资源地址 http/https://xxx.com/bundleName
+     * @param version 版本号 (md5)
+     */
+    const _useRemoteBundleMap = new Map<string, { url: string; version: string; bName: string }>();
+    export const setRemoteBundle = (urls: string | { url: string; version: string }[], version?: string) => {
+        if (typeof urls === "object") {
+            urls.forEach((item) => {
+                const lastPathSegment = getLastPathSegment(item.url);
+                if (!lastPathSegment) return;
+                _useRemoteBundleMap.set(lastPathSegment, {
+                    url: item.url,
+                    version: item.version,
+                    bName: lastPathSegment
+                });
+            });
+        } else {
+            const lastPathSegment = getLastPathSegment(urls);
+            if (!lastPathSegment) return;
+            _useRemoteBundleMap.set(lastPathSegment, { url: urls, version, bName: lastPathSegment });
+        }
+    };
+
+    function getLastPathSegment(url: string): string {
+        if (!/^https?:\/\//i.test(url)) return "";
+
+        const { pathname } = new URL(url);
+        return pathname.split("/").filter(Boolean).pop() ?? "";
+    }
+
+    /**
+     *
+     * @param args 当前bundle格式 只支持 http/https://xxx.com/bundleName 或 bundleName
+     * @returns
+     */
+    const getBundle = (args: BundleArgs): Promise<AssetManager.Bundle> => {
+        const remoteBundle = _useRemoteBundleMap.get(args.bName);
+        let bName = remoteBundle?.url ?? args.bName;
+        let version = remoteBundle?.version ?? args.version;
+        let lastPathSegment = remoteBundle?.bName ?? args.bName;
+        let isUseRemote = args.isUseRemote && !!(lastPathSegment && version);
+        if (!isUseRemote) {
+            bName = lastPathSegment;
+            version = null;
+        }
+
         let db = assetManager.getBundle(bName);
         if (db) {
             return Promise.resolve(db);
@@ -53,12 +121,25 @@ export namespace ResLoad {
      * @returns
      */
     export const res = <T extends Asset>(
-        bName: string,
-        resName: string,
-        resType: new (...args: any[]) => T,
+        args: string | ResArgsT<T>,
+        resName?: string,
+        resType?: new (...args: any[]) => T,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<T> => {
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            resType = args.resType;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
         if (isCache) {
             const asset = _assetMap.get(`${bName}_${resName}_${version || ""}`) as T;
             if (asset) {
@@ -67,7 +148,7 @@ export namespace ResLoad {
         }
 
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
+            getBundle({ bName, version, isUseRemote }).then((bundle) => {
                 return new Promise<T>((resolve, reject) => {
                     bundle.load(resName, resType, null, (err: Error, data: T) => {
                         if (err) {
@@ -87,38 +168,29 @@ export namespace ResLoad {
         );
     };
 
-    /**
-     * 清除缓存
-     * @param bName 资源包名
-     * @param resName 资源路径
-     * @param version 版本号
-     * @param isReleAsset 是否释放资源
-     */
-    export const clearCacheRes = <T extends Asset>(
-        bName: string,
-        resName: string,
-        version: string | null = null,
-        isReleAsset: boolean = true
-    ) => {
-        const key = `${bName}_${resName}_${version || ""}`;
-        if (isReleAsset) {
-            clearCacheResT(_assetMap.get(key) as T);
-        }
-        _assetMap.delete(key);
-    };
-
     export const clearCacheResT = <T extends Asset>(res: T) => {
         assetManager.releaseAsset(res);
     };
 
     export const dir = <T extends Asset>(
-        bName: string,
-        resName: string,
+        args: string | ResArgsT<T>,
+        resName?: string,
         onProgress?: Function,
         version: string | null = null
     ): Promise<T[]> => {
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
+            getBundle({ bName, version, isUseRemote }).then((bundle) => {
                 return new Promise<T[]>((resolve, reject) => {
                     bundle.loadDir(
                         resName,
@@ -151,14 +223,29 @@ export namespace ResLoad {
      * @param version 版本号
      * @returns
      */
-    export const dirT = <T extends Asset>(
-        bName: string,
-        resName: string,
-        resType: new (...args: any[]) => T,
+    export function dirT<T extends Asset>(
+        args: string | ResArgsProgress<T>,
+        resName?: string,
+        resType?: new (...args: any[]) => T,
         isCache: boolean = false,
         onProgress?: (finish: number, total: number, item?: any) => void,
         version: string | null = null
-    ): Promise<T[]> => {
+    ): Promise<T[]> {
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            resType = args.resType;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+            onProgress = args.onProgress;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+
         if (isCache) {
             const assets = _assetsMap.get(`${bName}_${resName}_${version || ""}`) as T[];
             if (assets) {
@@ -166,13 +253,13 @@ export namespace ResLoad {
             }
         }
         return Promise.resolve(
-            getBundle(bName, version).then((bundle) => {
+            getBundle({ bName, version, isUseRemote }).then((bundle) => {
                 return new Promise<T[]>((resolve, reject) => {
                     bundle.loadDir(
                         resName,
                         resType,
                         (finish: number, total: number, item: any) => {
-                            onProgress && onProgress(finish, total, item);
+                            onProgress?.(finish, total, item);
                         },
                         (err: Error, data: T[]) => {
                             if (err) {
@@ -191,106 +278,213 @@ export namespace ResLoad {
                 });
             })
         );
-    };
-
-    /**
-     * 清除缓存
-     * @param bName 资源包名
-     * @param resName 资源名
-     * @param version 版本号
-     * @param isReleAsset 是否释放资源
-     */
-    export const clearCacheDirT = <T extends Asset>(
-        bName: string,
-        resName: string,
-        version: string | null = null,
-        isReleAsset: boolean = true
-    ) => {
-        const key = `${bName}_${resName}_${version || ""}`;
-        if (isReleAsset) {
-            (_assetsMap.get(key) as T[])?.forEach((asset) => {
-                assetManager.releaseAsset(asset);
-            });
-        }
-        _assetsMap.delete(key);
-    };
+    }
 
     export const atlas = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<SpriteAtlas> => {
-        return res(bName, pName, SpriteAtlas, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: SpriteAtlas, isCache, version, isUseRemote });
     };
 
     export const spriteFrame = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<SpriteFrame> => {
-        if (!pName.endsWith("spriteFrame")) {
-            pName = `${pName}/spriteFrame`;
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
         }
-        return res(bName, pName, SpriteFrame, isCache, version);
+        if (!resName.endsWith("spriteFrame")) {
+            resName = `${resName}/spriteFrame`;
+        }
+        return res({ bName, resName, resType: SpriteFrame, isCache, version, isUseRemote });
     };
 
     export const spineData = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<sp.SkeletonData> => {
-        return res(bName, pName, sp.SkeletonData, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: sp.SkeletonData, isCache, version, isUseRemote });
     };
 
     export const prefab = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<Prefab> => {
-        return res(bName, pName, Prefab, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: Prefab, isCache, version, isUseRemote });
     };
 
     export const audioClip = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<AudioClip> => {
-        return res(bName, pName, AudioClip, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: AudioClip, isCache, version, isUseRemote });
     };
 
     export const animClip = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<AnimationClip> => {
-        return res(bName, pName, AnimationClip, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: AnimationClip, isCache, version, isUseRemote });
     };
 
     export const json = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<JsonAsset> => {
-        return res(bName, pName, JsonAsset, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: JsonAsset, isCache, version, isUseRemote });
     };
 
     export const font = (
-        bName: string,
-        pName: string,
+        args: string | ResArgs,
+        resName?: string,
         isCache: boolean = false,
         version: string | null = null
     ): Promise<Font> => {
-        return res(bName, pName, Font, isCache, version);
+        let bName: string;
+        let isUseRemote: boolean = true;
+        if (typeof args === "object") {
+            bName = args.bName;
+            isUseRemote = args.isUseRemote ?? true;
+            resName = args.resName;
+            isCache = args.isCache ?? false;
+            version = args.version ?? null;
+        } else {
+            bName = args;
+            isUseRemote = true;
+        }
+        return res({ bName, resName, resType: Font, isCache, version, isUseRemote });
     };
 
-    export const bundle = (bName: string, version: string | null = null): Promise<AssetManager.Bundle> => {
-        return getBundle(bName, version);
+    export const bundle = (args: string | BundleArgs): Promise<AssetManager.Bundle> => {
+        return getBundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true });
+    };
+
+    export const preloadT = <T extends Asset>(
+        args: string | BundleArgs,
+        resPath: string,
+        resType: new (...args: any[]) => T,
+        onProgress?: (finish: number, total: number, item: any) => void,
+        onComplete?: () => void
+    ) => {
+        bundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true }).then(
+            (bundleData) => {
+                bundleData.preloadDir(
+                    resPath,
+                    resType,
+                    (finish: number, total: number, item: any) => {
+                        onProgress?.(finish, total, item);
+                    },
+                    () => {
+                        onComplete?.();
+                    }
+                );
+            }
+        );
+    };
+
+    export const releaseBundle = (args: string | BundleArgs) => {
+        bundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true }).then(
+            (bundleData) => {
+                if (bundleData) {
+                    bundleData.releaseAll();
+                }
+            }
+        );
     };
 }
