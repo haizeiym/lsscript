@@ -38,6 +38,7 @@ export namespace ResLoad {
 
     const _assetsMap = new Map<string, unknown[]>();
     const _assetMap = new Map<string, unknown>();
+    const _assetBundleMap = new Map<string, AssetManager.Bundle>();
 
     /**
      * 使用远程资源版本号
@@ -86,7 +87,7 @@ export namespace ResLoad {
             version = null;
         }
 
-        let db = assetManager.getBundle(bName);
+        let db = _assetBundleMap.get(bName);
         if (db) {
             return Promise.resolve(db);
         }
@@ -103,6 +104,7 @@ export namespace ResLoad {
                             }
                             reject(null);
                         } else {
+                            _assetBundleMap.set(bName, data);
                             resolve(data);
                         }
                     }
