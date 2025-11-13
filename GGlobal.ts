@@ -172,11 +172,25 @@ export namespace GG {
          * @param key 多语言key
          * @param useInit 是否使用初始化key
          */
-        static changiLangBk(node: Node, bundleName: string, langKey: string, langPath: string = "lang") {
-            let ls = node.getComponent(LangSprite);
-            if (ls) {
-                ls.setBk(bundleName, langKey, langPath);
+
+        static changiLangBk(args: {
+            node: Node;
+            bundleName: string;
+            langKey?: string;
+            isAddLangSprite?: boolean;
+            extraLangKey?: string;
+            langPath?: string;
+        }) {
+            let ls = args.node.getComponent(LangSprite);
+            if (!ls) {
+                if (args.isAddLangSprite ?? false) {
+                    ls = args.node.addComponent(LangSprite);
+                } else {
+                    return;
+                }
             }
+            const langKey = args.extraLangKey ? `${args.extraLangKey}_${ls.langKey}` : args.langKey ?? ls.langKey;
+            ls.setBk(args.bundleName, langKey, args.langPath ?? "lang");
         }
 
         /**
