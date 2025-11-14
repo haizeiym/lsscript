@@ -4,6 +4,23 @@ interface RequestOptions {
     retryDelay?: number; // 重试延迟(ms)
 }
 
+interface HttpResponse<T = unknown> {
+    success: boolean;
+    status: number | null;
+    data: T | null;
+    error: string | null;
+}
+
+class HttpError extends Error {
+    public readonly status: number;
+
+    constructor(status: number, message: string) {
+        super(message);
+        this.name = "HttpError";
+        this.status = status;
+    }
+}
+
 // 存储所有进行中的请求的 AbortController
 const activeControllers = new Map<string, Map<string, Set<AbortController>>>();
 
@@ -54,10 +71,15 @@ export function abortAllRequests() {
 /**
  * 基础请求方法
  */
-async function request(url: string, options: RequestOptions = {}, fetchOptions: RequestInit = {}) {
+async function request<T = unknown>(
+    url: string,
+    options: RequestOptions = {},
+    fetchOptions: RequestInit = {}
+): Promise<HttpResponse<T>> {
     const { timeout = 5000, retries = 3, retryDelay = 1000 } = options;
-    let lastError: Error;
-    let controller: AbortController;
+    let lastError: Error | null = null;
+    let lastStatus: number | null = null;
+    let controller: AbortController | null = null;
     let timeoutId: number;
     let startTime = Date.now();
     const method = fetchOptions.method || "GET";
@@ -72,26 +94,41 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
     }
     const controllers = methodControllers.get(method)!;
 
+    const cleanupController = () => {
+        if (controller) {
+            controllers.delete(controller);
+        }
+        if (controllers.size === 0) {
+            methodControllers.delete(method);
+        }
+        if (methodControllers.size === 0) {
+            activeControllers.delete(url);
+        }
+    };
+
     try {
         for (let i = 0; i <= retries; i++) {
             try {
-                // 创建新的 controller
-                controller = new AbortController();
-                controllers.add(controller);
-
                 // 计算剩余超时时间
-                const remainingTimeout = Math.max(0, timeout - (Date.now() - startTime));
+                const elapsedTime = Date.now() - startTime;
+                const remainingTimeout = timeout - elapsedTime;
+
                 if (remainingTimeout <= 0) {
+                    lastError = new Error("Total request timeout exceeded");
                     return {
                         success: false,
-                        error: new Error("Total request timeout exceeded"),
+                        status: lastStatus,
+                        error: lastError.message,
                         data: null
                     };
                 }
 
+                // 创建新的 controller
+                controller = new AbortController();
+                controllers.add(controller);
+
                 timeoutId = setTimeout(() => {
-                    controller.abort();
-                    controllers.delete(controller);
+                    controller!.abort();
                 }, remainingTimeout);
 
                 const response = await fetch(url, {
@@ -99,52 +136,66 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
                     signal: controller.signal
                 });
 
-                // 清除定时器
                 clearTimeout(timeoutId);
-                controllers.delete(controller);
+                lastStatus = response.status;
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new HttpError(response.status, `HTTP error: ${response.status}`);
                 }
 
                 // 检查响应类型
                 const contentType = response.headers.get("content-type");
-                let data: any = null;
+                let data: T | null = null;
+
                 if (contentType && contentType.includes("application/json")) {
-                    data = await response.json();
+                    try {
+                        data = (await response.json()) as T;
+                    } catch (parseError) {
+                        throw new Error(
+                            "Invalid JSON response: " +
+                                (parseError instanceof Error ? parseError.message : String(parseError))
+                        );
+                    }
                 } else {
-                    data = await response.text();
+                    data = (await response.text()) as unknown as T;
                 }
 
+                cleanupController();
                 return {
                     success: true,
+                    status: lastStatus,
                     data,
                     error: null
                 };
             } catch (error) {
-                // 清除定时器
                 clearTimeout(timeoutId);
-                controllers.delete(controller);
 
                 // 处理不同类型的错误
-                if (error instanceof TypeError) {
+                if (error instanceof HttpError) {
+                    lastStatus = error.status;
+                    lastError = error;
+                } else if (error instanceof TypeError) {
                     // 网络错误
                     lastError = new Error("Network error: " + error.message);
                 } else if (error instanceof SyntaxError) {
                     // JSON 解析错误
                     lastError = new Error("JSON parse error: " + error.message);
-                } else if (error.name === "AbortError") {
+                } else if (error instanceof Error && error.name === "AbortError") {
                     // 超时错误
                     lastError = new Error("Request timeout");
-                } else {
+                } else if (error instanceof Error) {
                     lastError = error;
+                } else {
+                    lastError = new Error(String(error));
                 }
 
                 // 检查是否超过总超时时间
                 if (Date.now() - startTime >= timeout) {
+                    cleanupController();
                     return {
                         success: false,
-                        error: new Error("Total request timeout exceeded"),
+                        status: lastStatus,
+                        error: "Total request timeout exceeded",
                         data: null
                     };
                 }
@@ -157,48 +208,33 @@ async function request(url: string, options: RequestOptions = {}, fetchOptions: 
         }
 
         // 所有重试都失败后返回错误
+        cleanupController();
         return {
             success: false,
-            error: lastError,
+            status: lastStatus,
+            error: lastError?.message ?? "Unknown error",
             data: null
         };
     } catch (error) {
-        // 确保在最外层也清理资源
+        // 最外层捕获异常
         clearTimeout(timeoutId);
-        if (controller) {
-            controllers.delete(controller);
-        }
-        if (controllers.size === 0) {
-            methodControllers.delete(method);
-        }
-        if (methodControllers.size === 0) {
-            activeControllers.delete(url);
-        }
+        cleanupController();
+
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return {
             success: false,
-            error: error instanceof Error ? error : new Error(String(error)),
+            status: lastStatus,
+            error: errorMessage,
             data: null
         };
-    } finally {
-        // 清理资源
-        clearTimeout(timeoutId);
-        if (controller) {
-            controllers.delete(controller);
-        }
-        if (controllers.size === 0) {
-            methodControllers.delete(method);
-        }
-        if (methodControllers.size === 0) {
-            activeControllers.delete(url);
-        }
     }
 }
 
 /**
  * GET请求
  */
-export async function httpGet(url: string, options: RequestOptions = {}) {
-    return request(url, options, {
+export async function httpGet<T = unknown>(url: string, options: RequestOptions = {}): Promise<HttpResponse<T>> {
+    return request<T>(url, options, {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
@@ -209,8 +245,12 @@ export async function httpGet(url: string, options: RequestOptions = {}) {
 /**
  * POST请求
  */
-export async function httpPost(url: string, data: any, options: RequestOptions = {}) {
-    return request(url, options, {
+export async function httpPost<T = unknown>(
+    url: string,
+    data: any,
+    options: RequestOptions = {}
+): Promise<HttpResponse<T>> {
+    return request<T>(url, options, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
