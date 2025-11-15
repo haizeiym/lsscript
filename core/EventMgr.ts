@@ -4,64 +4,17 @@ interface eData {
     callback: (...args: unknown[]) => void;
 }
 
-const targetEventMap = new WeakMap<any, Set<string>>();
-
 export class Events {
-    private static _callbackCache = new Map<Function, Map<string, Map<any, eData>>>();
-
     private static _eventData: {
         events: { [eName: string]: eData[] };
+        targets: { [targetId: string]: Set<string> };
     } = {
-        events: Object.create(null)
+        events: Object.create(null),
+        targets: Object.create(null)
     };
 
     public static get eventData() {
         return this._eventData;
-    }
-
-    private static _findInCache(eName: string, callback: Function, target: any): eData | undefined {
-        const callbackMap = this._callbackCache.get(callback);
-        if (!callbackMap) return undefined;
-
-        const eventMap = callbackMap.get(eName);
-        if (!eventMap) return undefined;
-
-        const key = target ?? null;
-        return eventMap.get(key);
-    }
-
-    private static _addToCache(eName: string, callback: Function, target: any, eData: eData): void {
-        if (!this._callbackCache.has(callback)) {
-            this._callbackCache.set(callback, new Map());
-        }
-
-        const callbackMap = this._callbackCache.get(callback)!;
-        if (!callbackMap.has(eName)) {
-            callbackMap.set(eName, new Map());
-        }
-
-        const eventMap = callbackMap.get(eName)!;
-        const key = target ?? null;
-        eventMap.set(key, eData);
-    }
-
-    private static _removeFromCache(eName: string, callback: Function, target: any): void {
-        const callbackMap = this._callbackCache.get(callback);
-        if (!callbackMap) return;
-
-        const eventMap = callbackMap.get(eName);
-        if (!eventMap) return;
-
-        const key = target ?? null;
-        eventMap.delete(key);
-
-        // 清理空的 Map
-        if (eventMap.size === 0) {
-            callbackMap.delete(eName);
-        }
-        if (callbackMap.size === 0) {
-            this._callbackCache.delete(callback);
-        }
     }
 
     private static _addEvent(eName: string, callback: (...args: unknown[]) => void, target: any, isOnce: boolean) {
@@ -70,23 +23,25 @@ export class Events {
             list = this._eventData.events[eName] = [];
         }
 
-        if (this._findInCache(eName, callback, target)) {
+        const hasTarget = target != null;
+        if (list.some((ed) => ed.callback === callback && (hasTarget ? ed.target === target : ed.target == null))) {
             console.warn(`${isOnce ? "once" : ""}事件${eName}已存在`);
             return;
         }
 
-        const eData: eData = { isOnce, callback, target };
-        list.push(eData);
+        list.push({ isOnce, callback, target });
 
-        this._addToCache(eName, callback, target, eData);
-
-        const hasTarget = target != null;
         if (hasTarget) {
-            if (!targetEventMap.has(target)) {
-                targetEventMap.set(target, new Set());
+            const targetId = this._getTargetKey(target);
+            if (!this._eventData.targets[targetId]) {
+                this._eventData.targets[targetId] = new Set();
             }
-            targetEventMap.get(target)!.add(eName);
+            this._eventData.targets[targetId].add(eName);
         }
+    }
+
+    private static _getTargetKey(target: any): string {
+        return target.uuid ?? target._id;
     }
 
     static on(eName: string, callback: (...args: unknown[]) => void, target?: any) {
@@ -101,31 +56,24 @@ export class Events {
         const list = this._eventData.events[eName];
         if (!list) return;
 
-        this._removeFromCache(eName, callback, target);
+        const newList = list.filter((item) =>
+            target ? !(item.callback === callback && item.target === target) : item.callback !== callback
+        );
 
-        let writeIdx = 0;
-        for (let i = 0; i < list.length; i++) {
-            const item = list[i];
-            const shouldKeep =
-                target != null ? !(item.callback === callback && item.target === target) : item.callback !== callback;
-
-            if (shouldKeep) {
-                list[writeIdx++] = item;
-            }
-        }
-
-        if (writeIdx < list.length) {
-            list.length = writeIdx;
-        }
-
-        if (list.length === 0) {
+        if (newList.length === 0) {
             delete this._eventData.events[eName];
             if (target != null) {
-                const eventSet = targetEventMap.get(target);
+                const targetId = this._getTargetKey(target);
+                const eventSet = this._eventData.targets[targetId];
                 if (eventSet) {
                     eventSet.delete(eName);
+                    if (eventSet.size === 0) {
+                        delete this._eventData.targets[targetId];
+                    }
                 }
             }
+        } else {
+            this._eventData.events[eName] = newList;
         }
     }
 
@@ -133,23 +81,20 @@ export class Events {
         const list = this._eventData.events[eName];
         if (!list?.length) return;
 
-        const toRemove = new Set<eData>();
-
-        for (const item of list) {
-            try {
-                if (item.target) {
-                    item.callback.apply(item.target, args);
-                } else {
-                    item.callback(...args);
-                }
-            } catch (error) {
-                console.error(`Event ${eName} callback error:`, error);
+        const toRemove: eData[] = [];
+        const snapshot = [...list];
+        for (const item of snapshot) {
+            if (item.target) {
+                item.callback.apply(item.target, args);
+            } else {
+                item.callback(...args);
             }
-            if (item.isOnce) toRemove.add(item);
+            if (item.isOnce) toRemove.push(item);
         }
 
-        if (toRemove.size) {
-            const newList = list.filter((item) => !toRemove.has(item));
+        if (toRemove.length) {
+            const toRemoveSet = new Set(toRemove);
+            const newList = list.filter((item) => !toRemoveSet.has(item));
             if (newList.length === 0) {
                 delete this._eventData.events[eName];
             } else {
@@ -163,12 +108,14 @@ export class Events {
         if (!list) return;
 
         for (const item of list) {
-            this._removeFromCache(eName, item.callback, item.target);
-
             if (item.target != null) {
-                const eventSet = targetEventMap.get(item.target);
+                const targetId = this._getTargetKey(item.target);
+                const eventSet = this._eventData.targets[targetId];
                 if (eventSet) {
                     eventSet.delete(eName);
+                    if (eventSet.size === 0) {
+                        delete this._eventData.targets[targetId];
+                    }
                 }
             }
         }
@@ -178,48 +125,28 @@ export class Events {
 
     static clearAll() {
         this._eventData = {
-            events: Object.create(null)
+            events: Object.create(null),
+            targets: Object.create(null)
         };
-        this._callbackCache.clear();
     }
+
     static clearTarget(target: any) {
-        const eventSet = targetEventMap.get(target);
-        if (!eventSet || eventSet.size === 0) return;
+        const targetId = this._getTargetKey(target);
+        const eventSet = this._eventData.targets[targetId];
+        if (!eventSet) return;
 
-        try {
-            for (const eName of Array.from(eventSet)) {
-                const list = this._eventData.events[eName];
-                if (!list) continue;
-
-                let writeIdx = 0;
-                for (let i = 0; i < list.length; i++) {
-                    const item = list[i];
-                    if (item.target !== target) {
-                        list[writeIdx++] = item;
-                    } else {
-                        this._removeFromCache(eName, item.callback, target);
-                    }
-                }
-
-                if (writeIdx < list.length) {
-                    list.length = writeIdx;
-                }
-
-                if (list.length === 0) {
+        for (const eName of eventSet) {
+            const list = this._eventData.events[eName];
+            if (list) {
+                const newList = list.filter((item) => item.target !== target);
+                if (newList.length === 0) {
                     delete this._eventData.events[eName];
+                } else {
+                    this._eventData.events[eName] = newList;
                 }
             }
-        } finally {
-            targetEventMap.delete(target);
         }
-    }
 
-    static listenerCount(eName: string): number {
-        const list = this._eventData.events[eName];
-        return list?.length ?? 0;
-    }
-
-    static has(eName: string): boolean {
-        return (this._eventData.events[eName]?.length ?? 0) > 0;
+        delete this._eventData.targets[targetId];
     }
 }
