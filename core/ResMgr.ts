@@ -39,6 +39,7 @@ export namespace ResLoad {
     const _assetsMap = new Map<string, unknown[]>();
     const _assetMap = new Map<string, unknown>();
     const _assetBundleMap = new Map<string, AssetManager.Bundle>();
+    const _isPreloadBundleMap = new Map<string, boolean>();
 
     /**
      * 使用远程资源版本号
@@ -462,22 +463,35 @@ export namespace ResLoad {
         resPath: string,
         resType: new (...args: any[]) => T,
         onProgress?: (finish: number, total: number, item: any) => void,
-        onComplete?: () => void
+        onComplete?: () => void,
+        isUsePreload: boolean = true
     ) => {
-        bundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true }).then(
-            (bundleData) => {
-                bundleData.preloadDir(
-                    resPath,
-                    resType,
-                    (finish: number, total: number, item: any) => {
-                        onProgress?.(finish, total, item);
-                    },
-                    () => {
-                        onComplete?.();
+        let bName: string;
+        if (typeof args === "object") {
+            bName = args.bName;
+        } else {
+            bName = args;
+        }
+        const key = `${bName}_${resPath}_${resType.name}`;
+        if (isUsePreload && _isPreloadBundleMap.get(key)) {
+            onComplete?.();
+            return;
+        }
+        bundle({ bName, version: null, isUseRemote: true }).then((bundleData) => {
+            bundleData.preloadDir(
+                resPath,
+                resType,
+                (finish: number, total: number, item: any) => {
+                    onProgress?.(finish, total, item);
+                },
+                () => {
+                    if (isUsePreload) {
+                        _isPreloadBundleMap.set(key, true);
                     }
-                );
-            }
-        );
+                    onComplete?.();
+                }
+            );
+        });
     };
 
     export const releaseBundle = (args: string | BundleArgs) => {
