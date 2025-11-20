@@ -89,4 +89,45 @@ export namespace Tools {
         }
         return result;
     };
+
+    /**
+     * 获取数字小数位长度
+     */
+    const digitLength = (num: number): number => {
+        const eSplit = num.toString().split(/[eE]/);
+        const len = (eSplit[0].split(".")[1] || "").length - +(eSplit[1] || 0);
+        return len > 0 ? len : 0;
+    };
+
+    /**
+     * 将小数转为整数(支持科学计数法)
+     */
+    const float2Fixed = (num: number): number => {
+        const str = num.toString();
+        if (str.indexOf("e") === -1) {
+            return Number(str.replace(".", ""));
+        }
+        const dLen = digitLength(num);
+        return dLen > 0 ? Number(num) * Math.pow(10, dLen) : num;
+    };
+
+    /**
+     * 精确乘法(参考 number-precision)
+     */
+    export const times = (num1: number, num2: number): number => {
+        const num1Changed = float2Fixed(num1);
+        const num2Changed = float2Fixed(num2);
+        const baseNum = digitLength(num1) + digitLength(num2);
+        return (num1Changed * num2Changed) / Math.pow(10, baseNum);
+    };
+
+    export const floatPrecision = (num: number, precision: number = 2): number => {
+        if (!isFinite(num)) return num;
+        const base = Math.pow(10, precision);
+        let result = Math.round(Math.abs(times(num, base))) / base;
+        if (num < 0 && result !== 0) {
+            result = times(result, -1);
+        }
+        return result;
+    };
 }
