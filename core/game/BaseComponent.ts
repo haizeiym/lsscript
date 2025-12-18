@@ -22,7 +22,8 @@ export class BaseComponent extends Component {
 
     private _bindUis: BindUI[] = null;
     private _countFns: NCountFn[] = null;
-    private _extraChilds: BaseComponent[] = null;
+    
+    protected _extraChilds: BaseComponent[] = null;
 
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
