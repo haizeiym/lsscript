@@ -55,4 +55,6 @@ export class GameData {
     }
 }
 
-// 测试子模块提交
+
+export const lsGameData = GameData;
+
