@@ -43,8 +43,10 @@ export class BindUI {
             this.dicNode.set(name, node);
         } else if (name.startsWith("Langi")) {
             this.dicLangi.set(name, node);
+            this._setComponent<Sprite>(node, BindUI.SpriteType, this.dicImg);
         } else if (name.startsWith("Langt")) {
             this.dicLangt.set(name, node);
+            this._setComponent<Label>(node, BindUI.LabelType, this.dicTxt);
         } else if (name.startsWith("Btn")) {
             this._setComponent<Button>(node, BindUI.ButtonType, this.dicBtn);
         } else if (name.startsWith("Img")) {
@@ -92,26 +94,12 @@ export class BindUI {
         return this._getNodeAndBind(this.dicNode.get(name), false, true);
     }
 
-    public BOnce<T extends Component | Node>(com: T): void {
-        const node = com instanceof Node ? com : com.node;
-        this._BindUI(node, false);
-    }
-
-    public addLang<T extends Component | Node>(com: T, isDeep: boolean = false): void {
-        const node = com instanceof Node ? com : com.node;
-        this._BindUI(node, isDeep);
-    }
-
     public Langt(name: string, isDeep: boolean = false): Node | null {
         return this._getNodeAndBind(this.dicLangt.get(name), isDeep);
     }
 
     public Langi(name: string, isDeep: boolean = false): Node | null {
         return this._getNodeAndBind(this.dicLangi.get(name), isDeep);
-    }
-
-    public LangiOnce(name: string): Node | null {
-        return this._getNodeAndBind(this.dicLangi.get(name), false, true);
     }
 
     public get Langis(): Node[] {
