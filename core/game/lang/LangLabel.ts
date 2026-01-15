@@ -11,6 +11,9 @@ const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 export class LangLabel extends Component {
     private _langKey: string = ""; //格式：Langt开头
 
+    @property({ displayName: "是否在onLoad时设置" })
+    private isOnLoad: boolean = true;
+
     private _langOption: any = null;
 
     public get langKey(): string {
@@ -35,8 +38,10 @@ export class LangLabel extends Component {
     protected onLoad() {
         this._label = this.getComponent(Label);
         let key = this.node.name.substring(5); //格式：Langt开头
-        if (key) {
+        if (key && this.isOnLoad) {
             this.langKey = key;
+        } else {
+            this._langKey = key;
         }
     }
 
