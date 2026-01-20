@@ -214,12 +214,16 @@ export namespace AnimFa {
         }
     };
 
+    // 例如：repeatFrames为_rf
+    // 规则1:xxx9_rf(10,11,19,30)命名的文件，表示第9帧，第10,11,19,30帧共用当前同一帧，文件排序时按xxx9排序
+    // 规则2:xxx9_rf(10-19)命名的文件，表示第9帧，第10到第19帧共用当前同一帧，文件排序时按xxx9排序
     export const play = (opt: {
         comp: Sprite | Node;
         frames: SpriteFrame[];
         loopcount?: number;
         frameTime?: number;
         defFrameIndex?: number;
+        repeatFrames?: string;
         endCallBack?: (comp: Sprite) => void;
         oneEndCallBack?: (comp?: Sprite) => void;
         frameCallBack?: (comp: Sprite, frameIndex: number) => void;
@@ -230,6 +234,7 @@ export namespace AnimFa {
             loopcount = 0,
             frameTime = 0.1,
             defFrameIndex = 0,
+            repeatFrames = null,
             endCallBack = null,
             oneEndCallBack = null,
             frameCallBack = null
@@ -275,9 +280,48 @@ export namespace AnimFa {
             comp.node.on(Node.EventType.NODE_DESTROYED, cleanup);
         }
 
-        const sortedFrames = [...frames].sort((a, b) => {
-            return getFrameNumber(a.name) - getFrameNumber(b.name);
-        });
+        let sortedFrames: SpriteFrame[] = [];
+        if (repeatFrames) {
+            const framePairs: { index: number; frame: SpriteFrame }[] = [];
+            frames.forEach((frame) => {
+                const name = frame.name;
+                const rfIndex = name.indexOf(repeatFrames + "(");
+                if (rfIndex !== -1 && name.endsWith(")")) {
+                    const baseName = name.substring(0, rfIndex);
+                    const repeatContent = name.substring(rfIndex + repeatFrames.length + 1, name.length - 1);
+                    const baseIndex = getFrameNumber(baseName);
+                    framePairs.push({ index: baseIndex, frame });
+
+                    const parts = repeatContent.split(",");
+                    parts.forEach((part) => {
+                        const trimmedPart = part.trim();
+                        if (trimmedPart.includes("-")) {
+                            const range = trimmedPart.split("-");
+                            const start = parseInt(range[0]);
+                            const end = parseInt(range[1]);
+                            if (!isNaN(start) && !isNaN(end)) {
+                                for (let i = start; i <= end; i++) {
+                                    framePairs.push({ index: i, frame });
+                                }
+                            }
+                        } else {
+                            const index = parseInt(trimmedPart);
+                            if (!isNaN(index)) {
+                                framePairs.push({ index, frame });
+                            }
+                        }
+                    });
+                } else {
+                    framePairs.push({ index: getFrameNumber(name), frame });
+                }
+            });
+            framePairs.sort((a, b) => a.index - b.index);
+            sortedFrames = framePairs.map((p) => p.frame);
+        } else {
+            sortedFrames = [...frames].sort((a, b) => {
+                return getFrameNumber(a.name) - getFrameNumber(b.name);
+            });
+        }
 
         const allCount = sortedFrames.length;
         const curCount = Math.max(0, Math.min(defFrameIndex, allCount - 1));
