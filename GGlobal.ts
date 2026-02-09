@@ -1,8 +1,8 @@
-import { Button, gfx, Node, view, Widget } from "cc";
+import { Button, Node, ResolutionPolicy, Size, Widget, gfx, screen, view } from "cc";
+import { GameData } from "./GameData";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
 import { LangSprite } from "./core/game/lang/LangSprite";
-import { GameData } from "./GameData";
 
 export namespace GG {
     const urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
@@ -189,7 +189,7 @@ export namespace GG {
                     return;
                 }
             }
-            const langKey = args.extraLangKey ? `${args.extraLangKey}_${ls.langKey}` : args.langKey ?? ls.langKey;
+            const langKey = args.extraLangKey ? `${args.extraLangKey}_${ls.langKey}` : (args.langKey ?? ls.langKey);
             ls.setBk(args.bundleName, langKey, args.langPath ?? "lang");
         }
 
@@ -245,6 +245,23 @@ export namespace GG {
 
         public static get sy(): number {
             return view.getVisibleSize().height / view.getDesignResolutionSize().height;
+        }
+    }
+
+    export class canvasExtra {
+        static adapt(resolution: Size | number, y?: number): void {
+            if (typeof resolution === "number") {
+                y = y ?? view.getDesignResolutionSize().height;
+                resolution = new Size(resolution, y);
+            }
+            const resRatio = resolution.width / resolution.height;
+            const winSize = screen.windowSize;
+            const screenRatio = winSize.width / winSize.height;
+            if (screenRatio > resRatio) {
+                view.setDesignResolutionSize(resolution.width, resolution.height, ResolutionPolicy.FIXED_HEIGHT);
+            } else {
+                view.setDesignResolutionSize(resolution.width, resolution.height, ResolutionPolicy.FIXED_WIDTH);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-import { _decorator, Component, ResolutionPolicy, screen, view } from "cc";
+import { _decorator, Component, screen, view } from "cc";
+import { GG } from "./GGlobal";
 const { ccclass, property } = _decorator;
 
 @ccclass("AdapterCanvas")
@@ -9,15 +10,7 @@ export class AdapterCanvas extends Component {
     }
 
     private adapt(): void {
-        const resolution = view.getDesignResolutionSize();
-        let resolutionRatio = resolution.width / resolution.height;
-        let winSize = view.getVisibleSize();
-        let ratio = winSize.width / winSize.height;
-        if (ratio > resolutionRatio) {
-            view.setResolutionPolicy(ResolutionPolicy.FIXED_HEIGHT);
-        } else {
-            view.setResolutionPolicy(ResolutionPolicy.FIXED_WIDTH);
-        }
+        GG.canvasExtra.adapt(view.getDesignResolutionSize());
     }
 
     onDestroy() {
