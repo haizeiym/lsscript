@@ -6,7 +6,6 @@ const { ccclass, property } = _decorator;
 export class AdapterCanvas extends Component {
     start() {
         screen.on("window-resize", this.adapt, this);
-        this.adapt();
     }
 
     private adapt(): void {
