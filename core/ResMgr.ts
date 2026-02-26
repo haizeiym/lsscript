@@ -33,7 +33,7 @@ export namespace ResLoad {
     };
 
     type ResArgsProgress<T extends Asset> = ResArgsT<T> & {
-        onProgress?: (finish: number, total: number, item?: any) => void;
+        onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void;
     };
 
     const _assetsMap = new Map<string, unknown[]>();
@@ -178,7 +178,7 @@ export namespace ResLoad {
     export const dir = <T extends Asset>(
         args: string | ResArgsT<T>,
         resName?: string,
-        onProgress?: Function,
+        onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void,
         version: string | null = null
     ): Promise<T[]> => {
         let bName: string;
@@ -197,7 +197,7 @@ export namespace ResLoad {
                 return new Promise<T[]>((resolve, reject) => {
                     bundle.loadDir(
                         resName,
-                        (finish: number, total: number, item: any) => {
+                        (finish: number, total: number, item: AssetManager.RequestItem) => {
                             onProgress && onProgress(finish, total, item);
                         },
                         (err: Error, data: T[]) => {
@@ -231,7 +231,7 @@ export namespace ResLoad {
         resName?: string,
         resType?: new (...args: any[]) => T,
         isCache: boolean = false,
-        onProgress?: (finish: number, total: number, item?: any) => void,
+        onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void,
         version: string | null = null
     ): Promise<T[]> {
         let bName: string;
@@ -261,7 +261,7 @@ export namespace ResLoad {
                     bundle.loadDir(
                         resName,
                         resType,
-                        (finish: number, total: number, item: any) => {
+                        (finish: number, total: number, item: AssetManager.RequestItem) => {
                             onProgress?.(finish, total, item);
                         },
                         (err: Error, data: T[]) => {
@@ -281,6 +281,40 @@ export namespace ResLoad {
                 });
             })
         );
+    }
+
+    export async function loadingDirT<T extends Asset>(
+        args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => T) | number } },
+        onProgress?: (finish: number, total: number) => void
+    ): Promise<void> {
+        const uuidMap = new Map<string, string>();
+        for (const bundleName in args) {
+            const bundle = await ResLoad.bundle(bundleName);
+            const pathObj = args[bundleName];
+            for (const path in pathObj) {
+                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => T);
+                const info = bundle.getDirWithPath(path, resType);
+                info.forEach((item) => {
+                    uuidMap.set(item.uuid, item.path);
+                });
+            }
+        }
+
+        const allCount = uuidMap.size;
+        let finishCount = 0;
+        for (const bundleName in args) {
+            const pathObj = args[bundleName];
+            for (const path in pathObj) {
+                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => T);
+                dirT(bundleName, path, resType, true, (finish, total, item) => {
+                    if (uuidMap.has(item.uuid)) {
+                        uuidMap.delete(item.uuid);
+                        finishCount++;
+                        onProgress?.(finishCount, allCount);
+                    }
+                });
+            }
+        }
     }
 
     export const atlas = (
