@@ -283,37 +283,32 @@ export namespace ResLoad {
         );
     }
 
-    export async function loadingDirT<T extends Asset>(
-        args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => T) | number } },
+    export async function loadingDirT(
+        args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => Asset) | number } },
         onProgress?: (finish: number, total: number) => void
     ): Promise<void> {
         const uuidMap = new Map<string, string>();
+        const entries: { bundleName: string; path: string; resType: (new (...args: any[]) => Asset) | null }[] = [];
+
         for (const bundleName in args) {
             const bundle = await ResLoad.bundle(bundleName);
             const pathObj = args[bundleName];
             for (const path in pathObj) {
-                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => T);
-                const info = bundle.getDirWithPath(path, resType);
-                info.forEach((item) => {
-                    uuidMap.set(item.uuid, item.path);
-                });
+                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => Asset);
+                bundle.getDirWithPath(path, resType).forEach((item) => uuidMap.set(item.uuid, item.path));
+                entries.push({ bundleName, path, resType });
             }
         }
 
-        const allCount = uuidMap.size;
         let finishCount = 0;
-        for (const bundleName in args) {
-            const pathObj = args[bundleName];
-            for (const path in pathObj) {
-                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => T);
-                dirT(bundleName, path, resType, true, (finish, total, item) => {
-                    if (uuidMap.has(item.uuid)) {
-                        uuidMap.delete(item.uuid);
-                        finishCount++;
-                        onProgress?.(finishCount, allCount);
-                    }
-                });
-            }
+        const allCount = uuidMap.size;
+        for (const { bundleName, path, resType } of entries) {
+            dirT(bundleName, path, resType, true, (finish, total, item) => {
+                if (uuidMap.has(item.uuid)) {
+                    uuidMap.delete(item.uuid);
+                    onProgress?.(++finishCount, allCount);
+                }
+            });
         }
     }
 
