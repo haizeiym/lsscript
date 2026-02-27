@@ -287,29 +287,38 @@ export namespace ResLoad {
         args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => Asset) | number } },
         onProgress?: (finish: number, total: number) => void
     ): Promise<void> {
-        const uuidMap = new Map<string, string>();
-        const entries: { bundleName: string; path: string; resType: (new (...args: any[]) => Asset) | null }[] = [];
+        const bundleMap = new Map<string, { path: string; resType: (new (...args: any[]) => Asset) | null }[]>();
+        let allCount = 0;
 
         for (const bundleName in args) {
             const bundle = await ResLoad.bundle(bundleName);
             const pathObj = args[bundleName];
-            for (const path in pathObj) {
-                const resType = typeof pathObj[path] === "number" ? null : (pathObj[path] as new (...args: any[]) => Asset);
-                bundle.getDirWithPath(path, resType).forEach((item) => uuidMap.set(item.uuid, item.path));
-                entries.push({ bundleName, path, resType });
+
+            for (const dirPath in pathObj) {
+                const resType =
+                    typeof pathObj[dirPath] === "number" ? null : (pathObj[dirPath] as new (...args: any[]) => Asset);
+
+                let list = bundleMap.get(bundleName);
+                if (!list) {
+                    list = [];
+                    bundleMap.set(bundleName, list);
+                }
+
+                bundle.getDirWithPath(dirPath, resType).forEach((item) => {
+                    list!.push({ path: item.path, resType });
+                    allCount++;
+                });
             }
         }
 
         let finishCount = 0;
-        const allCount = uuidMap.size;
-        for (const { bundleName, path, resType } of entries) {
-            dirT(bundleName, path, resType, true, (finish, total, item) => {
-                if (uuidMap.has(item.uuid)) {
-                    uuidMap.delete(item.uuid);
+        bundleMap.forEach((items, bundleName) => {
+            items.forEach(({ path, resType }) => {
+                res(bundleName, path, resType, true).then(() => {
                     onProgress?.(++finishCount, allCount);
-                }
+                });
             });
-        }
+        });
     }
 
     export const atlas = (
