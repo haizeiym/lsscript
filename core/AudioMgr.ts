@@ -32,15 +32,25 @@ export class AudioMgr {
 
     public static setBgmVolume(volume: number) {
         this._bgmVolume = volume;
-        this._audioSource.volume = this._bgmVolume;
+        if (this._audioSource?.isValid) {
+            this._audioSource.volume = this._bgmVolume;
+        }
     }
 
     public static playEffect(sound: AudioClip, volume: number = this._effectVolume) {
         if (this._isStop || this._isStopEffect) return;
+        if (!this._audioSource?.isValid) {
+            console.warn("audioSource 未初始化");
+            return;
+        }
         this._audioSource.playOneShot(sound, volume);
     }
 
     public static playBgm(sound: AudioClip, loop: boolean = true) {
+        if (!this._audioSource?.isValid) {
+            console.warn("audioSource 未初始化");
+            return;
+        }
         this._audioSource.stop();
         if (this._isStop || this._isStopBgm) {
             this._audioSource.clip = sound;
@@ -54,6 +64,68 @@ export class AudioMgr {
         this._audioSource.play();
     }
 
+    public static stopAudio(isStop: boolean) {
+        if (this._isStop === isStop) return;
+        this._isStop = isStop;
+        if (!this._audioSource?.isValid) {
+            console.warn("audioSource 未初始化");
+            return;
+        }
+        if (this._isStop) {
+            this._audioSource.stop();
+        } else {
+            //全局打开stop时，同步打开bgm和effect的stop
+            this._isStopBgm = false;
+            this._isStopEffect = false;
+            this._audioSource.play();
+        }
+    }
+
+    public static pauseBgm(isPauseBgm: boolean) {
+        if (this._isStop || this._isStopBgm) return;
+        if (!this._audioSource?.isValid) {
+            console.warn("audioSource 未初始化");
+            return;
+        }
+        if (isPauseBgm) {
+            this._audioSource.pause();
+        } else {
+            this._audioSource.play();
+        }
+    }
+
+    public static stopBgm(isStopBgm: boolean) {
+        if (!this._audioSource?.isValid) {
+            console.warn("audioSource 未初始化");
+            this._isStopBgm = isStopBgm;
+            return;
+        }
+
+        this._isStopBgm = isStopBgm;
+        if (this._isStopBgm) {
+            this._audioSource.stop();
+        } else {
+            if (this._isStop) return;
+            this._audioSource.play();
+        }
+    }
+
+    public static stopEffect(isStopEffect: boolean) {
+        this._isStopEffect = isStopEffect;
+    }
+
+    public static get isStopEffect() {
+        return this._isStopEffect;
+    }
+
+    public static get isStopBgm() {
+        return this._isStopBgm;
+    }
+
+    /**
+     * @deprecated
+     * 请使用 stopAudio 代替
+     */
     public static setIsStop(isStop: boolean) {
         if (this._isStop === isStop) return;
         this._isStop = isStop;
@@ -64,6 +136,10 @@ export class AudioMgr {
         }
     }
 
+    /**
+     * @deprecated
+     * 请使用 pauseBgm 代替
+     */
     public static setIsPauseBgm(isPauseBgm: boolean) {
         if (this._isStop || this._isStopBgm) return;
         if (isPauseBgm) {
@@ -73,14 +149,18 @@ export class AudioMgr {
         }
     }
 
+    /**
+     * @deprecated
+     * 请使用 stopEffect 代替
+     */
     public static setIsStopEffect(isStopEffect: boolean) {
         this._isStopEffect = isStopEffect;
     }
 
-    public static get isStopEffect() {
-        return this._isStopEffect;
-    }
-
+    /**
+     * @deprecated
+     * 请使用 stopBgm 代替
+     */
     public static setIsStopBgm(isStopBgm: boolean) {
         if ((this._isStopBgm = isStopBgm)) {
             this._audioSource.stop();
@@ -88,9 +168,5 @@ export class AudioMgr {
             if (this._isStop) return;
             this._audioSource.play();
         }
-    }
-
-    public static get isStopBgm() {
-        return this._isStopBgm;
     }
 }
