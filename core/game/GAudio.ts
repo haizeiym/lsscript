@@ -63,6 +63,7 @@ export namespace GAudio {
         AudioMgr.setBgmVolume(volume);
     };
 
+    //#region 弃用方法
     /**
      * @deprecated
      * 请使用 stopAudio 代替
@@ -110,4 +111,5 @@ export namespace GAudio {
     export const setIsStopEffect = (isStopEffect: boolean) => {
         AudioMgr.setIsStopEffect(isStopEffect);
     };
+    //#endregion
 }

@@ -1,4 +1,4 @@
-import { Button, Node, ResolutionPolicy, Size, Widget, gfx, screen, view } from "cc";
+import { AudioClip, Button, Node, ResolutionPolicy, Size, Widget, gfx, screen, view } from "cc";
 import { GameData, lsGameData } from "./GameData";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
@@ -163,6 +163,16 @@ export namespace GG {
 
         static getBgmVolume(): number {
             return lsGameData.getSaveData(this.BgmVolumeKey, 1);
+        }
+
+        static async Bgm(bName: string, pName: string, isLoop: boolean = true): Promise<AudioClip> {
+            this.syncIsStopBgm();
+            return await GAudio.bgm(bName, pName, isLoop);
+        }
+
+        static async Effect(bName: string, pName: string, volume: number = 1): Promise<AudioClip> {
+            this.syncIsStopEffect();
+            return await GAudio.effect(bName, pName, volume);
         }
 
         //#region 弃用方法
