@@ -121,7 +121,7 @@ export class AudioMgr {
     public static get isStopBgm() {
         return this._isStopBgm;
     }
-
+    //#region 弃用方法
     /**
      * @deprecated
      * 请使用 stopAudio 代替
@@ -169,4 +169,5 @@ export class AudioMgr {
             this._audioSource.play();
         }
     }
+    //#endregion
 }

@@ -1,5 +1,5 @@
 import { Button, Node, ResolutionPolicy, Size, Widget, gfx, screen, view } from "cc";
-import { GameData } from "./GameData";
+import { GameData, lsGameData } from "./GameData";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
 import { LangSprite } from "./core/game/lang/LangSprite";
@@ -92,6 +92,84 @@ export namespace GG {
     export class clsExtra {
         private static _initAudio: boolean = false;
         private static _isStopAudio: boolean = false;
+        private static readonly EftVolumeKey = "eftVolume";
+        private static readonly BgmVolumeKey = "bgmVolume";
+
+        static syncIsStopAudio(): boolean {
+            const isStopAudio = this.getIsStopAudio();
+            lsGameData.setIsStopAudio(isStopAudio);
+            GAudio.stopAudio(isStopAudio);
+            return isStopAudio;
+        }
+
+        static getIsStopAudio(): boolean {
+            return lsGameData.getIsStopAudio();
+        }
+
+        static stopAudio(value: boolean) {
+            lsGameData.setIsStopAudio(value);
+            GAudio.stopAudio(value);
+        }
+
+        static pauseBgm(value: boolean) {
+            GAudio.pauseBgm(value);
+        }
+
+        static stopBgm(value: boolean) {
+            lsGameData.setIsStopBgm(value);
+            GAudio.stopBgm(value);
+        }
+
+        static syncIsStopBgm(): boolean {
+            const isStopBgm = this.getIsStopBgm();
+            lsGameData.setIsStopBgm(isStopBgm);
+            GAudio.stopBgm(isStopBgm);
+            return isStopBgm;
+        }
+
+        static getIsStopBgm(): boolean {
+            return lsGameData.getIsStopBgm();
+        }
+
+        static stopEffect(value: boolean) {
+            lsGameData.setIsStopEffect(value);
+            GAudio.stopEffect(value);
+        }
+
+        static syncIsStopEffect(): boolean {
+            const isStopEffect = this.getIsStopEffect();
+            lsGameData.setIsStopEffect(isStopEffect);
+            GAudio.stopEffect(isStopEffect);
+            return isStopEffect;
+        }
+
+        static getIsStopEffect(): boolean {
+            return lsGameData.getIsStopEffect();
+        }
+
+        static setEftVolume(volume: number): void {
+            lsGameData.setSaveData(this.EftVolumeKey, volume);
+            GAudio.setEffectVolume(volume);
+        }
+
+        static setBgmVolume(volume: number): void {
+            lsGameData.setSaveData(this.BgmVolumeKey, volume);
+            GAudio.setBgmVolume(volume);
+        }
+
+        static getEftVolume(): number {
+            return lsGameData.getSaveData(this.EftVolumeKey, 1);
+        }
+
+        static getBgmVolume(): number {
+            return lsGameData.getSaveData(this.BgmVolumeKey, 1);
+        }
+
+        //#region 弃用方法
+        /**
+         * @deprecated
+         * 请使用 syncIsStopAudio 代替
+         */
         static get isStopAudio(): boolean {
             if (!this._initAudio) {
                 this._initAudio = true;
@@ -100,21 +178,37 @@ export namespace GG {
             return this._isStopAudio;
         }
 
+        /**
+         * @deprecated
+         * 请使用 stopAudio 代替
+         */
         static set isStopAudio(value: boolean) {
             this._isStopAudio = value;
             GameData.setIsStopAudio(value);
             GAudio.setIsStop(value);
         }
 
+        /**
+         * @deprecated
+         * 请使用 syncIsStopBgm 代替
+         */
         static get isStopBgm(): boolean {
             return GameData.getIsStopBgm();
         }
 
+        /**
+         * @deprecated
+         * 请使用 stopBgm 代替
+         */
         static set isStopBgm(value: boolean) {
             GameData.setIsStopBgm(value);
             GAudio.setIsStopBgm(value);
         }
 
+        /**
+         * @deprecated
+         * 请使用 syncIsStopEffect 代替
+         */
         static get isStopEffect(): boolean {
             const isStopEffect = GameData.getIsStopEffect();
             GameData.setIsStopEffect(isStopEffect);
@@ -122,11 +216,15 @@ export namespace GG {
             return isStopEffect;
         }
 
+        /**
+         * @deprecated
+         * 请使用 stopEffect 代替
+         */
         static set isStopEffect(value: boolean) {
             GameData.setIsStopEffect(value);
             GAudio.setIsStopEffect(value);
         }
-
+        //#endregion
         /**
          * 手动添加多语言图片,有LangSprite操作要在方法之后
          * @param nodes 节点数组
