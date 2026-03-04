@@ -92,6 +92,8 @@ export namespace GG {
     export class clsExtra {
         private static _initAudio: boolean = false;
         private static _isStopAudio: boolean = false;
+
+        private static _isSyncInitAudio: boolean = false;
         private static readonly EftVolumeKey = "eftVolume";
         private static readonly BgmVolumeKey = "bgmVolume";
 
@@ -166,13 +168,21 @@ export namespace GG {
         }
 
         static async Bgm(bName: string, pName: string, isLoop: boolean = true): Promise<AudioClip> {
-            this.syncIsStopBgm();
+            this.isInitAudio();
             return await GAudio.bgm(bName, pName, isLoop);
         }
 
         static async Effect(bName: string, pName: string, volume: number = 1): Promise<AudioClip> {
-            this.syncIsStopEffect();
+            this.isInitAudio();
             return await GAudio.effect(bName, pName, volume);
+        }
+
+        static isInitAudio() {
+            if (this._isSyncInitAudio) return;
+            this._isSyncInitAudio = true;
+            this.syncIsStopAudio();
+            this.syncIsStopBgm();
+            this.syncIsStopEffect();
         }
 
         //#region 弃用方法
