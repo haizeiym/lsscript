@@ -312,12 +312,15 @@ export namespace ResLoad {
         }
 
         let finishCount = 0;
-        bundleMap.forEach((items, bundleName) => {
-            items.forEach(({ path, resType }) => {
-                res(bundleName, path, resType, true).then((res: Asset) => {
-                    onProgress?.(++finishCount, allCount, res);
-                });
-            });
+        bundleMap.forEach(async (items, bundleName) => {
+            for (const { path, resType } of items) {
+                const resData = await res(bundleName, path, resType, true);
+                onProgress?.(++finishCount, allCount, resData);
+            }
+            // items.forEach(async ({ path, resType }) => {
+            //     const resData = await res(bundleName, path, resType, true);
+            //     onProgress?.(++finishCount, allCount, resData);
+            // });
         });
     }
 
