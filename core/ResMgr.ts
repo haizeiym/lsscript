@@ -285,7 +285,8 @@ export namespace ResLoad {
 
     export async function loadingDirT(
         args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => Asset) | number } },
-        onProgress?: (finish: number, total: number, res?: Asset) => void
+        onProgress?: (finish: number, total: number, res?: Asset) => void,
+        groupSize: number = 500
     ): Promise<void> {
         const bundleMap = new Map<string, { path: string; resType: (new (...args: any[]) => Asset) | null }[]>();
         let allCount = 0;
@@ -313,14 +314,15 @@ export namespace ResLoad {
 
         let finishCount = 0;
         bundleMap.forEach(async (items, bundleName) => {
-            for (const { path, resType } of items) {
-                const resData = await res(bundleName, path, resType, true);
-                onProgress?.(++finishCount, allCount, resData);
+            for (let i = 0; i < items.length; i += groupSize) {
+                const group = items.slice(i, i + groupSize);
+                await Promise.all(
+                    group.map(async ({ path, resType }) => {
+                        const resData = await res(bundleName, path, resType, true);
+                        onProgress?.(++finishCount, allCount, resData);
+                    })
+                );
             }
-            // items.forEach(async ({ path, resType }) => {
-            //     const resData = await res(bundleName, path, resType, true);
-            //     onProgress?.(++finishCount, allCount, resData);
-            // });
         });
     }
 
