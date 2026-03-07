@@ -2,6 +2,17 @@ import { Component, Node, sp, Sprite, SpriteFrame, tween, Tween } from "cc";
 import { NTime } from "./NMgr";
 
 export namespace AnimSp {
+    type PlayOpt = {
+        skeleton: sp.Skeleton | Node;
+        animName?: string;
+        loopcount?: number;
+        timeScale?: number;
+        premultipliedAlpha?: boolean;
+        isNullData?: boolean;
+        oneEndCallBack?: (spSkeleton?: sp.Skeleton) => void;
+        endCallBack?: (spSkeleton?: sp.Skeleton) => void;
+    };
+
     const isValid = (spSkeleton: sp.Skeleton): boolean => {
         let isValid = spSkeleton && spSkeleton.isValid;
         if (!isValid) console.warn("spSkeleton不可以用");
@@ -21,13 +32,27 @@ export namespace AnimSp {
     };
 
     export const play = (
-        spSkeleton: sp.Skeleton | Node,
-        animName: string,
-        loopcount: number = 0,
-        endCallBack: (spSkeleton?: sp.Skeleton) => void = null,
-        timeScale: number = 1,
-        premultipliedAlpha: boolean = false
+        spSkeleton: sp.Skeleton | Node | PlayOpt,
+        animName?: string,
+        loopcount?: number,
+        endCallBack?: (spSkeleton?: sp.Skeleton) => void,
+        timeScale?: number,
+        premultipliedAlpha?: boolean,
+        oneEndCallBack?: (spSkeleton?: sp.Skeleton) => void,
+        isNullData?: boolean
     ): sp.spine.Animation => {
+        if (!(spSkeleton instanceof Node) && typeof spSkeleton === "object" && "skeleton" in spSkeleton) {
+            const opt = spSkeleton as PlayOpt;
+            spSkeleton = opt.skeleton;
+            animName = opt.animName ?? animName;
+            loopcount = opt.loopcount ?? loopcount;
+            endCallBack = opt.endCallBack ?? endCallBack;
+            timeScale = opt.timeScale ?? timeScale;
+            premultipliedAlpha = opt.premultipliedAlpha ?? premultipliedAlpha;
+            oneEndCallBack = opt.oneEndCallBack ?? oneEndCallBack;
+            isNullData = opt.isNullData ?? isNullData;
+        }
+
         if (spSkeleton instanceof Node) {
             spSkeleton = spSkeleton.getComponent(sp.Skeleton);
             if (!spSkeleton) {
@@ -41,6 +66,12 @@ export namespace AnimSp {
             console.warn("animName不能为空");
             return;
         }
+
+        loopcount ??= 0;
+        timeScale ??= 1;
+        premultipliedAlpha ??= false;
+        isNullData ??= true;
+
         spSkeleton.timeScale = timeScale;
         const fAnimation = spSkeleton.findAnimation(animName);
         if (!fAnimation) {
@@ -56,9 +87,13 @@ export namespace AnimSp {
             const tempSpSkeleton = spSkeleton;
             spSkeleton.setCompleteListener(() => {
                 if (--loopcount <= 0) {
-                    tempSpSkeleton.skeletonData = null;
+                    if (isNullData) {
+                        tempSpSkeleton.skeletonData = null;
+                    }
                     stop(tempSpSkeleton);
                     endCallBack?.(tempSpSkeleton);
+                } else {
+                    oneEndCallBack?.(tempSpSkeleton);
                 }
             });
         }
