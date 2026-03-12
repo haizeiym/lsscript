@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "lsscript": ["./index.ts"],
+            "lsscript/*": ["./*"],
+            "db://assets/*": ["../*"]
+        }
+    }
+}
