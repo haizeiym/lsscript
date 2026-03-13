@@ -1,6 +1,13 @@
 /**
  * lean script 框架导出
+ * 在项目根目录package.json中添加依赖：
+ * "dependencies": {
+ *     "lsscript": "file:assets/lsscript"
+ * }
+ * 在根tsconfig.json中设置Node.js解析规则：
+ * "moduleResolution": "node"，
  */
+
 //core
 export { AnimFa, AnimSp, AnimTw } from "./core/AnimMgr";
 export { AudioMgr } from "./core/AudioMgr";
