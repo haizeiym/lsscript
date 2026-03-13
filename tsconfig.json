@@ -1,10 +1,12 @@
 {
+    "extends": "../../tsconfig.json",
     "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "lsscript": ["./index.ts"],
-            "lsscript/*": ["./*"],
-            "db://assets/*": ["../*"]
-        }
+        "baseUrl": "../../",
+        "types": [
+            "../../temp/declarations/cc",
+            "../../temp/declarations/cc.env",
+            "../../temp/declarations/jsb",
+            "../../temp/declarations/cc.custom-macro"
+        ]
     }
 }
