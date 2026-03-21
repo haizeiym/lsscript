@@ -23,7 +23,7 @@ export namespace ResLoad {
     type ResArgs = {
         bName: string;
         resName: string;
-        isCache?: boolean;
+        isUseCache?: boolean; //是否使用缓存
         version?: string | null;
         isUseRemote?: boolean;
     };
@@ -36,8 +36,6 @@ export namespace ResLoad {
         onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void;
     };
 
-    const _assetsMap = new Map<string, unknown[]>();
-    const _assetMap = new Map<string, unknown>();
     const _assetBundleMap = new Map<string, AssetManager.Bundle>();
     const _isPreloadBundleMap = new Map<string, boolean>();
 
@@ -115,21 +113,22 @@ export namespace ResLoad {
     };
 
     /**
-     * 加载单个资源
+     * 加载单个资源，单独加载spriteFrame资源时，需要在resName后添加/spriteFrame
+     * 例如：res("path1/path2/名称/spriteFrame")
      * @param bName 资源包名
      * @param resName 资源路径
      * @param resType 资源类型
-     * @param isCache 是否缓存
+     * @param isUseCache 是否使用缓存
      * @param version 版本号
      * @returns
      */
-    export const res = <T extends Asset>(
+    export async function res<T extends Asset>(
         args: string | ResArgsT<T>,
         resName?: string,
         resType?: new (...args: any[]) => T,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
-    ): Promise<T> => {
+    ): Promise<T> {
         let bName: string;
         let isUseRemote: boolean = true;
         if (typeof args === "object") {
@@ -137,100 +136,110 @@ export namespace ResLoad {
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
             resType = args.resType;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        if (isCache) {
-            const asset = _assetMap.get(`${bName}_${resName}_${version || ""}`) as T;
-            if (asset) {
-                return Promise.resolve(asset);
+
+        const bundle = await getBundle({ bName, version, isUseRemote });
+        if (!bundle) return Promise.resolve(null);
+        if (isUseCache) {
+            const info = bundle.getInfoWithPath(resName, resType);
+            if (info) {
+                const asset = AssetManager.instance.assets.get(info.uuid);
+                if (asset && asset.isValid) {
+                    return Promise.resolve(asset as T);
+                }
             }
         }
 
-        return Promise.resolve(
-            getBundle({ bName, version, isUseRemote }).then((bundle) => {
-                return new Promise<T>((resolve, reject) => {
-                    bundle.load(resName, resType, null, (err: Error, data: T) => {
-                        if (err) {
-                            if (DEBUG) {
-                                console.warn(`bName=${bName} resName=${resName} res error: ${err}`);
-                            }
-                            reject(null);
-                        } else {
-                            if (isCache) {
-                                _assetMap.set(`${bName}_${resName}_${version || ""}`, data);
-                            }
-                            resolve(data);
-                        }
-                    });
-                });
-            })
-        );
-    };
+        return new Promise<T>((resolve, reject) => {
+            bundle.load(resName, resType, null, (err: Error, data: T) => {
+                if (err) {
+                    if (DEBUG) {
+                        console.warn(`bName=${bName} resName=${resName} res error: ${err}`);
+                    }
+                    reject(null);
+                } else {
+                    resolve(data);
+                }
+            });
+        });
+    }
 
-    export const clearCacheResT = <T extends Asset>(res: T) => {
-        assetManager.releaseAsset(res);
-    };
-
-    export const dir = <T extends Asset>(
+    export async function dir<T extends Asset>(
         args: string | ResArgsT<T>,
         resName?: string,
         onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void,
+        isUseCache: boolean = false,
         version: string | null = null
-    ): Promise<T[]> => {
+    ): Promise<T[]> {
         let bName: string;
         let isUseRemote: boolean = true;
         if (typeof args === "object") {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return Promise.resolve(
-            getBundle({ bName, version, isUseRemote }).then((bundle) => {
-                return new Promise<T[]>((resolve, reject) => {
-                    bundle.loadDir(
-                        resName,
-                        (finish: number, total: number, item: AssetManager.RequestItem) => {
-                            onProgress && onProgress(finish, total, item);
-                        },
-                        (err: Error, data: T[]) => {
-                            if (err) {
-                                if (DEBUG) {
-                                    console.warn(`bName=${bName} resName=${resName} dir error: ${err}`);
-                                }
-                                reject(null);
-                            } else {
-                                resolve(data);
-                            }
+
+        const bundle = await getBundle({ bName, version, isUseRemote });
+        if (!bundle) return Promise.resolve([]);
+        if (isUseCache) {
+            const items = bundle.getDirWithPath(resName);
+            const resList: T[] = [];
+            items.forEach((item) => {
+                const asset = assetManager.assets.get(item.uuid);
+                if (asset && asset.isValid) {
+                    resList.push(asset as T);
+                }
+            });
+            if (resList.length === items.length) {
+                return Promise.resolve(resList);
+            }
+        }
+
+        return new Promise<T[]>((resolve, reject) => {
+            bundle.loadDir(
+                resName,
+                (finish: number, total: number, item: AssetManager.RequestItem) => {
+                    onProgress && onProgress(finish, total, item);
+                },
+                (err: Error, data: T[]) => {
+                    if (err) {
+                        if (DEBUG) {
+                            console.warn(`bName=${bName} resName=${resName} dir error: ${err}`);
                         }
-                    );
-                });
-            })
-        );
-    };
+                        reject(null);
+                    } else {
+                        resolve(data);
+                    }
+                }
+            );
+        });
+    }
 
     /**
      * 加载目录资源
      * @param bName 资源包名
      * @param resName 资源路径
      * @param resType 资源类型
-     * @param isCache 是否缓存
+     * @param isUseCache 是否使用缓存
      * @param onProgress 加载进度
      * @param version 版本号
      * @returns
      */
-    export function dirT<T extends Asset>(
+    export async function dirT<T extends Asset>(
         args: string | ResArgsProgress<T>,
         resName?: string,
         resType?: new (...args: any[]) => T,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         onProgress?: (finish: number, total: number, item?: AssetManager.RequestItem) => void,
         version: string | null = null
     ): Promise<T[]> {
@@ -241,7 +250,7 @@ export namespace ResLoad {
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
             resType = args.resType;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
             onProgress = args.onProgress;
         } else {
@@ -249,38 +258,41 @@ export namespace ResLoad {
             isUseRemote = true;
         }
 
-        if (isCache) {
-            const assets = _assetsMap.get(`${bName}_${resName}_${version || ""}`) as T[];
-            if (assets) {
-                return Promise.resolve(assets);
+        const bundle = await getBundle({ bName, version, isUseRemote });
+        if (!bundle) return Promise.resolve([]);
+        if (isUseCache) {
+            const items = bundle.getDirWithPath(resName, resType);
+            const resList: T[] = [];
+            items.forEach((item) => {
+                const asset = assetManager.assets.get(item.uuid);
+                if (asset && asset.isValid) {
+                    resList.push(asset as T);
+                }
+            });
+            if (resList.length === items.length) {
+                return Promise.resolve(resList);
             }
         }
-        return Promise.resolve(
-            getBundle({ bName, version, isUseRemote }).then((bundle) => {
-                return new Promise<T[]>((resolve, reject) => {
-                    bundle.loadDir(
-                        resName,
-                        resType,
-                        (finish: number, total: number, item: AssetManager.RequestItem) => {
-                            onProgress?.(finish, total, item);
-                        },
-                        (err: Error, data: T[]) => {
-                            if (err) {
-                                if (DEBUG) {
-                                    console.warn(`bName=${bName} resName=${resName} dirT error: ${err}`);
-                                }
-                                reject(null);
-                            } else {
-                                if (isCache) {
-                                    _assetsMap.set(`${bName}_${resName}_${version || ""}`, data);
-                                }
-                                resolve(data);
-                            }
+
+        return new Promise<T[]>((resolve, reject) => {
+            bundle.loadDir(
+                resName,
+                resType,
+                (finish: number, total: number, item: AssetManager.RequestItem) => {
+                    onProgress?.(finish, total, item);
+                },
+                (err: Error, data: T[]) => {
+                    if (err) {
+                        if (DEBUG) {
+                            console.warn(`bName=${bName} resName=${resName} dirT error: ${err}`);
                         }
-                    );
-                });
-            })
-        );
+                        reject(null);
+                    } else {
+                        resolve(data);
+                    }
+                }
+            );
+        });
     }
 
     export async function loadingDirT(
@@ -329,7 +341,7 @@ export namespace ResLoad {
     export const atlas = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<SpriteAtlas> => {
         let bName: string;
@@ -338,19 +350,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: SpriteAtlas, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: SpriteAtlas, isUseCache, version, isUseRemote });
     };
 
     export const spriteFrame = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<SpriteFrame> => {
         let bName: string;
@@ -359,7 +371,7 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
@@ -368,13 +380,13 @@ export namespace ResLoad {
         if (!resName.endsWith("spriteFrame")) {
             resName = `${resName}/spriteFrame`;
         }
-        return res({ bName, resName, resType: SpriteFrame, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: SpriteFrame, isUseCache, version, isUseRemote });
     };
 
     export const spineData = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<sp.SkeletonData> => {
         let bName: string;
@@ -383,19 +395,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: sp.SkeletonData, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: sp.SkeletonData, isUseCache, version, isUseRemote });
     };
 
     export const prefab = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<Prefab> => {
         let bName: string;
@@ -404,19 +416,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: Prefab, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: Prefab, isUseCache, version, isUseRemote });
     };
 
     export const audioClip = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<AudioClip> => {
         let bName: string;
@@ -425,19 +437,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: AudioClip, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: AudioClip, isUseCache, version, isUseRemote });
     };
 
     export const animClip = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<AnimationClip> => {
         let bName: string;
@@ -446,19 +458,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: AnimationClip, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: AnimationClip, isUseCache, version, isUseRemote });
     };
 
     export const json = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<JsonAsset> => {
         let bName: string;
@@ -467,19 +479,19 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: JsonAsset, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: JsonAsset, isUseCache, version, isUseRemote });
     };
 
     export const font = (
         args: string | ResArgs,
         resName?: string,
-        isCache: boolean = false,
+        isUseCache: boolean = false,
         version: string | null = null
     ): Promise<Font> => {
         let bName: string;
@@ -488,13 +500,13 @@ export namespace ResLoad {
             bName = args.bName;
             isUseRemote = args.isUseRemote ?? true;
             resName = args.resName;
-            isCache = args.isCache ?? false;
+            isUseCache = args.isUseCache ?? false;
             version = args.version ?? null;
         } else {
             bName = args;
             isUseRemote = true;
         }
-        return res({ bName, resName, resType: Font, isCache, version, isUseRemote });
+        return res({ bName, resName, resType: Font, isUseCache, version, isUseRemote });
     };
 
     export const bundle = (args: string | BundleArgs): Promise<AssetManager.Bundle> => {
@@ -545,5 +557,9 @@ export namespace ResLoad {
                 }
             }
         );
+    };
+
+    export const clearCacheResT = <T extends Asset>(res: T) => {
+        assetManager.releaseAsset(res);
     };
 }
