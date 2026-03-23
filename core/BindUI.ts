@@ -73,12 +73,6 @@ export class BindUI {
         return this.dicImg.get(name);
     }
 
-    private _getNodeAndBind<T extends Node>(node: T | null, isDeep: boolean, bindOnce: boolean = false): T | null {
-        if (!node) return null;
-        this._BindUI(node, isDeep && !bindOnce);
-        return node;
-    }
-
     public NodeT<T extends Component>(name: string, com: new (...args: any[]) => T, isDeep: boolean = false): T | null {
         const node = this.dicNode.get(name);
         if (!node) return null;
@@ -87,19 +81,27 @@ export class BindUI {
     }
 
     public Node(name: string, isDeep: boolean = false): Node | null {
-        return this._getNodeAndBind(this.dicNode.get(name), isDeep);
+        const node = this.dicNode.get(name);
+        if (node && isDeep) this._BindUI(node, true);
+        return node;
     }
 
     public NodeOnce(name: string): Node | null {
-        return this._getNodeAndBind(this.dicNode.get(name), false, true);
+        const node = this.dicNode.get(name);
+        if (node) this._BindUI(node, false);
+        return node;
     }
 
     public Langt(name: string, isDeep: boolean = false): Node | null {
-        return this._getNodeAndBind(this.dicLangt.get(name), isDeep);
+        const node = this.dicLangt.get(name);
+        if (node && isDeep) this._BindUI(node, true);
+        return node;
     }
 
     public Langi(name: string, isDeep: boolean = false): Node | null {
-        return this._getNodeAndBind(this.dicLangi.get(name), isDeep);
+        const node = this.dicLangi.get(name);
+        if (node && isDeep) this._BindUI(node, true);
+        return node;
     }
 
     public get Langis(): Node[] {
