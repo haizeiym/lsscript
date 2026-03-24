@@ -295,8 +295,18 @@ export namespace ResLoad {
         });
     }
 
+    /**
+     * 多个bundle加载目录资源
+     * @param args 资源路径及类型{bundleName: {dirPath: 类型|类型[]|[]}} //为空数组时加载所有资源
+     * @param onProgress 加载进度
+     * @param groupSize 分组大小
+     */
     export async function loadingDirT(
-        args: { [bundleName: string]: { [dirPath: string]: (new (...args: any[]) => Asset) | number } },
+        args: {
+            [bundleName: string]: {
+                [dirPath: string]: (new (...args: any[]) => Asset) | (new (...args: any[]) => Asset)[];
+            };
+        },
         onProgress?: (finish: number, total: number, res?: Asset) => void,
         groupSize: number = 500
     ): Promise<void> {
@@ -306,21 +316,24 @@ export namespace ResLoad {
         for (const bundleName in args) {
             const bundle = await ResLoad.bundle(bundleName);
             const pathObj = args[bundleName];
+            let list = bundleMap.get(bundleName);
+            if (!list) {
+                list = [];
+                bundleMap.set(bundleName, list);
+            }
 
             for (const dirPath in pathObj) {
-                const resType =
-                    typeof pathObj[dirPath] === "number" ? null : (pathObj[dirPath] as new (...args: any[]) => Asset);
-
-                let list = bundleMap.get(bundleName);
-                if (!list) {
-                    list = [];
-                    bundleMap.set(bundleName, list);
+                const raw = pathObj[dirPath];
+                const types = (Array.isArray(raw) ? raw : [raw]) as (new (...args: any[]) => Asset)[];
+                const n = types.length;
+                for (let t = 0; t < (n || 1); t++) {
+                    const resType = n ? types[t] : null;
+                    const items = resType != null ? bundle.getDirWithPath(dirPath, resType) : bundle.getDirWithPath(dirPath);
+                    for (let k = 0; k < items.length; k++) {
+                        list.push({ path: items[k].path, resType });
+                        allCount++;
+                    }
                 }
-
-                bundle.getDirWithPath(dirPath, resType).forEach((item) => {
-                    list!.push({ path: item.path, resType });
-                    allCount++;
-                });
             }
         }
 
