@@ -1,6 +1,6 @@
 import { Button, Component, Node } from "cc";
 
-export type BtnCallback = (btn?: Node | Button) => void;
+export type BtnCallback = (btn?: Node | Button | any) => void;
 
 export class Btn {
     private static _commonBtnCallback: BtnCallback; //全部按钮公共方法

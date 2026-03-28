@@ -22,7 +22,7 @@ export class BaseComponent extends Component {
 
     private _bindUis: BindUI[] = null;
     private _countFns: NCountFn[] = null;
-    
+
     protected _extraChilds: BaseComponent[] = null;
 
     // _setInit --- onLoad --- start
