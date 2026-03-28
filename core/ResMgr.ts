@@ -101,7 +101,6 @@ export namespace ResLoad {
     };
 
     /**
-     *
      * @param args 当前bundle格式 只支持 http/https://xxx.com/bundleName 或 bundleName
      * @returns
      */
@@ -121,25 +120,19 @@ export namespace ResLoad {
             return Promise.resolve(db);
         }
 
-        return Promise.resolve(
-            new Promise<AssetManager.Bundle>((resolve, reject) => {
-                assetManager.loadBundle(
-                    bName,
-                    !version ? null : { version },
-                    (err: Error, data: AssetManager.Bundle) => {
-                        if (err) {
-                            if (DEBUG) {
-                                console.warn(`bName=${bName} load error: ${err}`);
-                            }
-                            reject(null);
-                        } else {
-                            _assetBundleMap.set(bName, data);
-                            resolve(data);
-                        }
+        return new Promise<AssetManager.Bundle>((resolve, reject) => {
+            assetManager.loadBundle(bName, !version ? null : { version }, (err: Error, data: AssetManager.Bundle) => {
+                if (err) {
+                    if (DEBUG) {
+                        console.warn(`bName=${bName} load error: ${err}`);
                     }
-                );
-            })
-        );
+                    reject(null);
+                } else {
+                    _assetBundleMap.set(bName, data);
+                    resolve(data);
+                }
+            });
+        });
     };
 
     /**
