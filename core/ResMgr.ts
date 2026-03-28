@@ -314,7 +314,7 @@ export namespace ResLoad {
         let allCount = 0;
 
         for (const bundleName in args) {
-            const bundle = await ResLoad.bundle(bundleName);
+            const bundle = await getBundle({ bName: bundleName, version: null, isUseRemote: true });
             const pathObj = args[bundleName];
             let list = bundleMap.get(bundleName);
             if (!list) {
@@ -327,10 +327,10 @@ export namespace ResLoad {
                 const types = (Array.isArray(raw) ? raw : [raw]) as (new (...args: any[]) => Asset)[];
                 const n = types.length;
                 for (let t = 0; t < (n || 1); t++) {
-                    const resType = n ? types[t] : null;
-                    const items = resType != null ? bundle.getDirWithPath(dirPath, resType) : bundle.getDirWithPath(dirPath);
+                    const rt = n ? types[t] : null;
+                    const items = rt != null ? bundle.getDirWithPath(dirPath, rt) : bundle.getDirWithPath(dirPath);
                     for (let k = 0; k < items.length; k++) {
-                        list.push({ path: items[k].path, resType });
+                        list.push({ path: items[k].path, resType: rt });
                         allCount++;
                     }
                 }
@@ -535,17 +535,23 @@ export namespace ResLoad {
         isUsePreload: boolean = true
     ) => {
         let bName: string;
+        let version: string;
+        let isUseRemote: boolean;
         if (typeof args === "object") {
             bName = args.bName;
+            version = args.version ?? null;
+            isUseRemote = args.isUseRemote ?? true;
         } else {
             bName = args;
+            version = null;
+            isUseRemote = true;
         }
         const key = `${bName}_${resPath}_${resType.name}`;
         if (isUsePreload && _isPreloadBundleMap.get(key)) {
             onComplete?.();
             return;
         }
-        bundle({ bName, version: null, isUseRemote: true }).then((bundleData) => {
+        getBundle({ bName, version, isUseRemote }).then((bundleData) => {
             bundleData.preloadDir(
                 resPath,
                 resType,
@@ -563,7 +569,7 @@ export namespace ResLoad {
     };
 
     export const releaseBundle = (args: string | BundleArgs) => {
-        bundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true }).then(
+        getBundle(typeof args === "object" ? args : { bName: args, version: null, isUseRemote: true }).then(
             (bundleData) => {
                 if (bundleData) {
                     bundleData.releaseAll();
