@@ -271,16 +271,12 @@ export namespace GG {
          * 多语言图片设置
          * @param node 节点
          * @param key 多语言key
-         * @param useInit 是否使用初始化key
+         * @param langPath 多语言路径
          */
-        static changiLangKey(node: Node, key: string, useInit: boolean = true) {
+        static changiLangKey(node: Node, key: string, langPath: string = null) {
             let ls = node.getComponent(LangSprite);
             if (ls) {
-                if (useInit) {
-                    ls.changeUrl(`${ls.initLangKey}${key}`);
-                } else {
-                    ls.changeUrl(key);
-                }
+                ls.changeUrl(key, langPath);
             }
         }
 

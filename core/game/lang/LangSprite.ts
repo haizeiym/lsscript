@@ -92,9 +92,11 @@ export class LangSprite extends Component {
         this._updateSprite();
     }
 
-    public changeUrl(key: string, langPath: string = "lang") {
+    public changeUrl(key: string, langPath: string) {
         this._langKey = key;
-        this._langPath = langPath;
+        if (langPath) {
+            this._langPath = langPath;
+        }
         this._updateSprite();
     }
 
