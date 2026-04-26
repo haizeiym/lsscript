@@ -121,10 +121,11 @@ export namespace Tools {
         return (num1Changed * num2Changed) / Math.pow(10, baseNum);
     };
 
+    /** 保留 precision 位小数，向零截断（不四舍五入），仍用 times 减轻浮点误差 */
     export const floatPrecision = (num: number, precision: number = 2): number => {
         if (!isFinite(num)) return num;
         const base = Math.pow(10, precision);
-        let result = Math.round(Math.abs(times(num, base))) / base;
+        let result = Math.floor(Math.abs(times(num, base))) / base;
         if (num < 0 && result !== 0) {
             result = times(result, -1);
         }
