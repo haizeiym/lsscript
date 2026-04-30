@@ -2,13 +2,6 @@ import { NBig } from "./NMgr";
 
 export namespace Tools {
     /**
-     * 将 number 中常见二进制尾差归一化为十进制字符串（例如 0.7999999999999999 -> "0.8"）。
-     */
-    const normalizeDecimal = (num: number): string => {
-        return Number.parseFloat(Number(num).toPrecision(15)).toString();
-    };
-
-    /**
      * 将一个Date对象或Date时间戳返回格式化日期字符串
      * @param date Date对象或Date时间戳（毫秒）
      * @param timezoneOffset 时区偏移量（小时），0表示UTC时间，8表示UTC+8，-5表示UTC-5
@@ -100,37 +93,6 @@ export namespace Tools {
     };
 
     /**
-     * 获取数字小数位长度
-     */
-    const digitLength = (num: number): number => {
-        const eSplit = num.toString().split(/[eE]/);
-        const len = (eSplit[0].split(".")[1] || "").length - +(eSplit[1] || 0);
-        return len > 0 ? len : 0;
-    };
-
-    /**
-     * 将小数转为整数(支持科学计数法)
-     */
-    const float2Fixed = (num: number): number => {
-        const str = num.toString();
-        if (str.indexOf("e") === -1) {
-            return Number(str.replace(".", ""));
-        }
-        const dLen = digitLength(num);
-        return dLen > 0 ? Number(num) * Math.pow(10, dLen) : num;
-    };
-
-    /**
-     * 精确乘法(参考 number-precision)
-     */
-    export const times = (num1: number, num2: number): number => {
-        const num1Changed = float2Fixed(num1);
-        const num2Changed = float2Fixed(num2);
-        const baseNum = digitLength(num1) + digitLength(num2);
-        return (num1Changed * num2Changed) / Math.pow(10, baseNum);
-    };
-
-    /**
      * 精确保留 precision 位小数，向零截断（不四舍五入）。
      * 为避免 number 二进制误差，请优先传十进制字符串。
      */
@@ -141,7 +103,7 @@ export namespace Tools {
 
         if (typeof value === "number") {
             if (!isFinite(value)) return String(value);
-            return new NBig(normalizeDecimal(value)).round(precision, NBig.roundDown).toString();
+            return new NBig(value).round(precision, NBig.roundDown).toString();
         }
 
         const input = value.trim();
@@ -152,6 +114,6 @@ export namespace Tools {
     /** 保留 precision 位小数，向零截断（不四舍五入）。如需完全避免精度问题请用 floatPrecisionExact。 */
     export const floatPrecision = (num: number, precision: number = 2): number => {
         if (!isFinite(num)) return num;
-        return Number(floatPrecisionExact(num, precision));
+        return Number(new NBig(num).round(precision, NBig.roundDown).toString());
     };
 }
