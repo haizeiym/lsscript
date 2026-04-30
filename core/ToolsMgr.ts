@@ -1,3 +1,5 @@
+import { NBig } from "./NMgr";
+
 export namespace Tools {
     /**
      * 将一个Date对象或Date时间戳返回格式化日期字符串
@@ -122,21 +124,28 @@ export namespace Tools {
     };
 
     /**
-     * 剥离 IEEE-754 计算后残留的尾差，例如 79.99999999999999 -> 80
+     * 精确保留 precision 位小数，向零截断（不四舍五入）。
+     * 为避免 number 二进制误差，请优先传十进制字符串。
      */
-    const strip = (num: number, precision: number = 15): number => {
-        return Number.parseFloat(Number(num).toPrecision(precision));
+    export const floatPrecisionExact = (value: string | number, precision: number = 2): string => {
+        if (!Number.isInteger(precision) || precision < 0) {
+            throw new Error("precision must be a non-negative integer");
+        }
+
+        if (typeof value === "number") {
+            if (!isFinite(value)) return String(value);
+            return new NBig(value.toString()).round(precision, NBig.roundDown).toString();
+        }
+
+        const input = value.trim();
+        if (input.length === 0) return "0";
+        return new NBig(input).round(precision, NBig.roundDown).toString();
     };
 
-    /** 保留 precision 位小数，向零截断（不四舍五入），仍用 times 减轻浮点误差 */
+    /** 保留 precision 位小数，向零截断（不四舍五入）。如需完全避免精度问题请用 floatPrecisionExact。 */
     export const floatPrecision = (num: number, precision: number = 2): number => {
         if (!isFinite(num)) return num;
-        const base = Math.pow(10, precision);
-        const scaled = strip(times(num, base));
-        let result = Math.floor(Math.abs(scaled)) / base;
-        if (num < 0 && result !== 0) {
-            result = times(result, -1);
-        }
-        return result;
+        const normalized = Number.parseFloat(Number(num).toPrecision(15)).toString();
+        return Number(floatPrecisionExact(normalized, precision));
     };
 }
