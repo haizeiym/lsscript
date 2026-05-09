@@ -113,8 +113,7 @@ export namespace Tools {
 
     /** 保留 precision 位小数，向零截断（不四舍五入）。如需完全避免精度问题请用 floatPrecisionExact。 */
     export const floatPrecision = (num: number, precision: number = 2): number => {
-        if (!isFinite(num)) return num;
-        return Number(new NBig(num.toPrecision(15)).round(precision, NBig.roundDown).toString());
+        return floatPrecisionStable(num, precision);
     };
 
     /**
