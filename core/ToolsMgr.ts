@@ -116,4 +116,22 @@ export namespace Tools {
         if (!isFinite(num)) return num;
         return Number(new NBig(num.toPrecision(15)).round(precision, NBig.roundDown).toString());
     };
+
+    /**
+     * 稳定地保留 precision 位小数，向零截断。
+     * 截断前先在 (precision + 6) 位上做四舍五入以清理浮点二进制误差，
+     * 避免如 0.9999999999999999 / 0.999999999999999 这类应当代表 1.0 的值
+     * 在 precision = 0 时被 roundDown 误判为 0。
+     * 对于真实的小数值（如 0.99、0.9999），仍会保持向零截断的语义。
+     */
+    export const floatPrecisionStable = (num: number, precision: number = 2): number => {
+        if (!isFinite(num)) return num;
+        const safePrecision = precision >= 0 ? precision : 0;
+        return Number(
+            new NBig(num.toPrecision(15))
+                .round(safePrecision + 6, NBig.roundHalfUp)
+                .round(precision, NBig.roundDown)
+                .toString()
+        );
+    };
 }
