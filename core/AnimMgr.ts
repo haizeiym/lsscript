@@ -181,6 +181,8 @@ export namespace AnimFa {
             loopcount: number;
             frameTime: number;
             defFrameIndex: number;
+            startFrameIndex: number;
+            isReverse: boolean;
             curCount: number;
             allCount: number;
             endCallBack?: (comp: Sprite) => void; //所有循环结束回调
@@ -219,12 +221,13 @@ export namespace AnimFa {
             return;
         }
 
-        const { frames, loopcount, defFrameIndex, curCount, allCount, endCallBack, oneEndCallBack, frameCallBack } =
+        const { frames, loopcount, startFrameIndex, isReverse, curCount, allCount, endCallBack, oneEndCallBack, frameCallBack } =
             state;
 
-        state.curCount = curCount + 1;
+        state.curCount = isReverse ? curCount - 1 : curCount + 1;
+        const isCycleEnd = isReverse ? state.curCount < 0 : state.curCount >= allCount;
 
-        if (state.curCount >= allCount) {
+        if (isCycleEnd) {
             if (loopcount > 0) {
                 state.loopcount = loopcount - 1;
                 if (state.loopcount <= 0) {
@@ -233,13 +236,13 @@ export namespace AnimFa {
                     endCallBack?.(comp);
                     return;
                 } else {
-                    state.curCount = defFrameIndex;
+                    state.curCount = startFrameIndex;
                     comp.spriteFrame = frames[state.curCount];
                     frameCallBack?.(comp, state.curCount);
                     oneEndCallBack?.(comp);
                 }
             } else {
-                state.curCount = defFrameIndex;
+                state.curCount = startFrameIndex;
                 comp.spriteFrame = frames[state.curCount];
                 frameCallBack?.(comp, state.curCount);
             }
@@ -258,6 +261,7 @@ export namespace AnimFa {
         loopcount?: number;
         frameTime?: number;
         defFrameIndex?: number;
+        isReverse?: boolean;
         repeatFrames?: string;
         endCallBack?: (comp: Sprite) => void;
         oneEndCallBack?: (comp?: Sprite) => void;
@@ -269,6 +273,7 @@ export namespace AnimFa {
             loopcount = 0,
             frameTime = 0.1,
             defFrameIndex = 0,
+            isReverse = false,
             repeatFrames = null,
             endCallBack = null,
             oneEndCallBack = null,
@@ -359,13 +364,17 @@ export namespace AnimFa {
         }
 
         const allCount = sortedFrames.length;
-        const curCount = Math.max(0, Math.min(defFrameIndex, allCount - 1));
+        const startFrameIndex =
+            isReverse && defFrameIndex === 0 ? allCount - 1 : Math.max(0, Math.min(defFrameIndex, allCount - 1));
+        const curCount = startFrameIndex;
 
         compAnimStateMap.set(comp, {
             frames: sortedFrames,
             loopcount,
             frameTime,
             defFrameIndex,
+            startFrameIndex,
+            isReverse,
             curCount,
             allCount,
             endCallBack,
