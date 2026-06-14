@@ -59,7 +59,7 @@ export class ECSContext {
     }
 
     // 驱动所有系统运行（匹配列表已增量维护，每帧无过滤、无分配）
-    public update(dt: number): void {
+    public update(dt?: number): void {
         for (let i = 0; i < this.systems.length; i++) {
             this.systems[i].tick(dt);
         }

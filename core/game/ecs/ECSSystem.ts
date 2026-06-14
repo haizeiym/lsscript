@@ -13,8 +13,8 @@ export abstract class ECSSystem {
      */
     public abstract readonly filterComponents: readonly ECSComponentClass[];
 
-    /** 每帧更新逻辑，entities 为已匹配 filterComponents 的实体集合 */
-    public abstract update(dt: number, entities: ReadonlySet<ECSEntity>): void;
+    /** 每帧更新逻辑，entities 为已匹配 filterComponents 的实体集合；dt 可选，按需使用 */
+    public abstract update(entities: ReadonlySet<ECSEntity>, dt?: number): void;
 
     public init(context: ECSContext): void {
         this.context = context;
@@ -35,8 +35,8 @@ export abstract class ECSSystem {
     }
 
     /** @internal 每帧由 Context 调用 */
-    public tick(dt: number): void {
-        this.update(dt, this.matched);
+    public tick(dt?: number): void {
+        this.update(this.matched, dt);
     }
 
     /** @internal 系统被移除或 Context 清空时由 Context 调用 */
