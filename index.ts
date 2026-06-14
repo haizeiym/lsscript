@@ -24,6 +24,13 @@ export { BaseComponent } from "./core/game/BaseComponent";
 export { eventsOnLoad, preloadEvent } from "./core/game/BaseDescriptor";
 export { GAudio } from "./core/game/GAudio";
 export { GEventName } from "./core/game/GEventsName";
+//ecs
+export { ECSComponent } from "./core/game/ecs/ECSComponent";
+export type { ECSComponentClass } from "./core/game/ecs/ECSComponent";
+export { ECSContext } from "./core/game/ecs/ECSContext";
+export { ECSEntity } from "./core/game/ecs/ECSEntity";
+export { ECSSystem } from "./core/game/ecs/ECSSystem";
+//lang
 export { LangLabel } from "./core/game/lang/LangLabel";
 export { LangMgr } from "./core/game/lang/LangMgr";
 export { LangSprite } from "./core/game/lang/LangSprite";
