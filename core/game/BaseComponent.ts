@@ -49,11 +49,16 @@ export class BaseComponent extends Component {
         return bUI;
     }
 
-    protected _addTime(duration: number, loopcall: () => void, loopcount?: number, endcall?: () => void): number {
+    protected _addTime(
+        duration: number,
+        loopcall: (dt?: number) => void,
+        loopcount?: number,
+        endcall?: (dt?: number) => void
+    ): number {
         return NTime.addObjTime(this, duration * 1000, loopcall, loopcount, endcall);
     }
 
-    protected _addTimeOnce(duration: number, callback: () => void): number {
+    protected _addTimeOnce(duration: number, callback: (dt?: number) => void): number {
         return NTime.addObjTimeOnce(this, duration * 1000, callback);
     }
 
