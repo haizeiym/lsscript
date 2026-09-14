@@ -4,6 +4,7 @@
  * "dependencies": {
  *     "lsscript": "file:assets/lsscript"
  * }
+ * 然后执行 npm install 安装依赖
  * 在根tsconfig.json中设置Node.js解析规则：
  * "moduleResolution": "node"，
  */
