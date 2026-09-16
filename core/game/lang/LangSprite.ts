@@ -1,15 +1,24 @@
 import { _decorator, Button, CCString, Component, Node, Sprite, SpriteFrame } from "cc";
+import { EDITOR } from "cc/env";
 import { ResLoad } from "../../ResMgr";
 import { eventsOnLoad, preloadEvent } from "../BaseDescriptor";
 import { GEventName } from "../GEventsName";
 import { LangMgr } from "./LangMgr";
-const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
+const { ccclass, property, requireComponent, disallowMultiple, executeInEditMode } = _decorator;
+
+declare const require: any;
+declare const Editor: any;
+const fs = EDITOR ? require("fs") : null;
+const path = EDITOR ? require("path") : null;
 
 /**
- * 多语言图片手动添加到名称以Langi开头的节点上
+ * 多语言图片组件
+ * 1. 通常挂载在以 Langi 开头的节点上
+ * 2. 编辑器模式下根据引用的图片自动获取与更新 bundleName 和 langPath
  */
 @eventsOnLoad()
 @ccclass("LangSprite")
+@executeInEditMode
 @requireComponent(Sprite)
 @disallowMultiple
 export class LangSprite extends Component {
@@ -86,6 +95,8 @@ export class LangSprite extends Component {
 
     private _sprite: Sprite = null;
     private _btn: Button = null;
+    private _lastSpriteFrame: SpriteFrame = null;
+    private _isUpdatingMeta: boolean = false;
 
     public changeBundleName(bundleName: string) {
         this._bundleName = bundleName;
@@ -101,9 +112,214 @@ export class LangSprite extends Component {
     }
 
     protected onLoad(): void {
+        if (EDITOR) {
+            this._lastSpriteFrame = this.getComponent(Sprite)?.spriteFrame || null;
+            this._autoUpdateBundleAndLangPath();
+            return;
+        }
         if (this.isOnLoad) {
             this._updateSprite();
         }
+    }
+
+    protected update(dt: number): void {
+        if (EDITOR) {
+            const currentFrame = this.getComponent(Sprite)?.spriteFrame || null;
+            if (currentFrame !== this._lastSpriteFrame) {
+                this._lastSpriteFrame = currentFrame;
+                this._autoUpdateBundleAndLangPath();
+            }
+        }
+    }
+
+    public onValidate(): void {
+        if (EDITOR) {
+            const currentFrame = this.getComponent(Sprite)?.spriteFrame || null;
+            if (currentFrame !== this._lastSpriteFrame) {
+                this._lastSpriteFrame = currentFrame;
+                this._autoUpdateBundleAndLangPath();
+            }
+        }
+    }
+
+    public resetInEditor(): void {
+        if (EDITOR) {
+            this._lastSpriteFrame = this.getComponent(Sprite)?.spriteFrame || null;
+            this._autoUpdateBundleAndLangPath();
+        }
+    }
+
+    /**
+     * 在编辑器模式下根据 Sprite 引用的图片自动更新 bundleName 和 langPath
+     */
+    private async _autoUpdateBundleAndLangPath() {
+        if (!EDITOR) return;
+        if (this._isUpdatingMeta) return;
+
+        const sprite = this.getComponent(Sprite);
+        const spriteFrame = sprite?.spriteFrame;
+
+        if (!spriteFrame) {
+            this._bundleName = "";
+            this._langPath = "";
+            return;
+        }
+
+        this._isUpdatingMeta = true;
+        try {
+            const filePath = await this._getSpriteFrameFilePath(spriteFrame);
+            if (filePath) {
+                const bundleInfo = LangSprite.findBundleInfo(filePath);
+                if (bundleInfo) {
+                    this._bundleName = bundleInfo.bundleName;
+                    this._langPath = LangSprite.resolveLangPath(bundleInfo.bundleDir, filePath);
+                } else {
+                    this._bundleName = "";
+                    this._langPath = "";
+                }
+            }
+        } catch (err) {
+            console.warn("[LangSprite] 自动获取 bundleName / langPath 失败:", err);
+        } finally {
+            this._isUpdatingMeta = false;
+        }
+    }
+
+    /**
+     * 在编辑器模式下获取 SpriteFrame 对应的图片文件物理路径
+     */
+    private async _getSpriteFrameFilePath(spriteFrame: SpriteFrame): Promise<string> {
+        if (!spriteFrame) return "";
+        const uuid = (spriteFrame as any)._uuid || (spriteFrame as any).uuid;
+        if (!uuid) return "";
+
+        let filePath = "";
+        if (typeof Editor !== "undefined" && Editor?.Message?.request) {
+            try {
+                let assetInfo = await Editor.Message.request("asset-db", "query-asset-info", uuid);
+                if ((!assetInfo || !assetInfo.file) && typeof uuid === "string" && uuid.includes("@")) {
+                    assetInfo = await Editor.Message.request("asset-db", "query-asset-info", uuid.split("@")[0]);
+                }
+                if (assetInfo) {
+                    filePath = assetInfo.file || "";
+                    if (!filePath && assetInfo.path && path) {
+                        const projectPath = Editor.Project?.path;
+                        if (projectPath && assetInfo.path.startsWith("db://assets/")) {
+                            filePath = path.join(
+                                projectPath,
+                                "assets",
+                                assetInfo.path.substring("db://assets/".length)
+                            );
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("[LangSprite] query-asset-info 异常:", err);
+            }
+        }
+
+        return filePath;
+    }
+
+    /**
+     * 根据图片绝对路径向上查找父级目录的 .meta 文件，确定 bundle 目录和 bundleName
+     */
+    public static findBundleInfo(filePath: string): { bundleDir: string; bundleName: string } | null {
+        if (!fs || !path || !filePath) return null;
+        try {
+            let currentDir = path.dirname(filePath);
+            while (currentDir && currentDir !== "/" && path.basename(currentDir) !== "") {
+                if (path.basename(currentDir) === "assets") {
+                    break;
+                }
+                const metaPath = currentDir + ".meta";
+                if (fs.existsSync(metaPath)) {
+                    try {
+                        const metaContent = fs.readFileSync(metaPath, "utf-8");
+                        const metaJson = JSON.parse(metaContent);
+                        if (metaJson && metaJson.userData && metaJson.userData.isBundle === true) {
+                            let bundleName = "";
+                            if (
+                                typeof metaJson.userData.bundleName === "string" &&
+                                metaJson.userData.bundleName.trim() !== ""
+                            ) {
+                                bundleName = metaJson.userData.bundleName.trim();
+                            } else {
+                                bundleName = path.basename(currentDir);
+                            }
+                            return { bundleDir: currentDir, bundleName };
+                        }
+                    } catch (e) {
+                        console.warn("[LangSprite] 解析 meta 文件失败:", metaPath, e);
+                    }
+                }
+                const parentDir = path.dirname(currentDir);
+                if (parentDir === currentDir) break;
+                currentDir = parentDir;
+            }
+        } catch (err) {
+            console.warn("[LangSprite] 查找 Bundle 目录异常:", err);
+        }
+        return null;
+    }
+
+    /**
+     * 根据 bundle 目录和图片路径，截取 langPath
+     * 规则：A->B->C->zh->c.png，如 A 为 bundle 目录，则 langPath 为 B/C
+     */
+    public static resolveLangPath(bundleDir: string, filePath: string): string {
+        if (!bundleDir || !filePath || !path) return "";
+        const rel = path.relative(bundleDir, filePath).replace(/\\/g, "/");
+        const parts = rel.split("/").filter(Boolean);
+        // 移除文件名 (例如 c.png)
+        parts.pop();
+
+        const langSet = new Set([
+            "zh",
+            "en",
+            "tc",
+            "tw",
+            "hk",
+            "vn",
+            "vi",
+            "id",
+            "th",
+            "ja",
+            "ko",
+            "de",
+            "es",
+            "fr",
+            "ru",
+            "pt",
+            "my",
+            "ar",
+            "hi",
+            "zh-cn",
+            "zh-tw",
+            "zh_cn",
+            "zh_tw",
+            "en-us",
+            "en_us"
+        ]);
+        if (LangMgr.lang) {
+            langSet.add(LangMgr.lang.toLowerCase());
+        }
+
+        // 优先在路径分段中匹配已知语言目录
+        let langIndex = -1;
+        for (let i = 0; i < parts.length; i++) {
+            if (langSet.has(parts[i].toLowerCase())) {
+                langIndex = i;
+                break;
+            }
+        }
+
+        if (langIndex >= 0) {
+            return parts.slice(0, langIndex).join("/");
+        }
+
+        // 若未匹配到已知语言目录，默认以文件直接上级目录作为语言目录
+        return parts.slice(0, -1).join("/");
     }
 
     @preloadEvent(GEventName.LangChange)

@@ -4,7 +4,7 @@ import { Tools } from "../../ToolsMgr";
 import { GEventName } from "../GEventsName";
 export class LangMgr {
     private static _instance: LangMgr = null;
-    private static _lang: string = "";
+    private static _lang: string = "zh";
     private static _txtBundlerName: string = "";
 
     private _langTxtData: { [key: string]: string } = {};
