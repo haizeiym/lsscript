@@ -6,7 +6,7 @@ const VoiceKey = {
     isStopEffect: "is_stopEffect"
 } as const;
 
-export class GameData {
+export class lsGameData {
     public static setSaveData(key: string, value: any) {
         try {
             sys.localStorage.setItem(key, JSON.stringify(value));
@@ -54,7 +54,3 @@ export class GameData {
         return this.getSaveData(VoiceKey.isStopEffect, 0) === 1;
     }
 }
-
-
-export const lsGameData = GameData;
-

@@ -38,4 +38,4 @@ export { LangSprite } from "./core/game/lang/LangSprite";
 
 //global
 export { GG } from "./GGlobal";
-export { lsGameData } from "./GameData";
+export { lsGameData } from "./LSGameData";

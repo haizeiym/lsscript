@@ -1,5 +1,5 @@
 import { AudioClip, Button, Node, ResolutionPolicy, Size, Widget, gfx, screen, view } from "cc";
-import { GameData, lsGameData } from "./GameData";
+import { lsGameData } from "./LSGameData";
 import { GAudio } from "./core/game/GAudio";
 import { LangLabel } from "./core/game/lang/LangLabel";
 import { LangSprite } from "./core/game/lang/LangSprite";
@@ -15,43 +15,6 @@ export namespace GG {
         }
         return id;
     };
-
-    export class clsTime {
-        private static _syncTime: number = 50; //同步时间间隔
-        static get syncTime(): number {
-            return this._syncTime;
-        }
-
-        static set syncTime(value: number) {
-            this._syncTime = value;
-        }
-
-        private static _clientTime: number = 0;
-        static get clientTime(): number {
-            return this._clientTime || Date.now();
-        }
-
-        static set clientTime(value: number) {
-            this._clientTime = value;
-        }
-
-        private static _serverTime: number = 0;
-        static get serverTime(): number {
-            return this._serverTime || Date.now();
-        }
-
-        static set serverTime(value: number) {
-            this._serverTime = value;
-        }
-
-        static isSyncTime(): boolean {
-            let isSync = Math.abs(this.clientTime - this.serverTime) > this.syncTime;
-            if (isSync) {
-                this.clientTime = this.serverTime;
-            }
-            return isSync;
-        }
-    }
 
     export class webgl {
         static gl(): WebGLRenderingContext | WebGL2RenderingContext {
@@ -90,9 +53,6 @@ export namespace GG {
     }
 
     export class clsExtra {
-        private static _initAudio: boolean = false;
-        private static _isStopAudio: boolean = false;
-
         private static _isSyncInitAudio: boolean = false;
         private static readonly EftVolumeKey = "eftVolume";
         private static readonly BgmVolumeKey = "bgmVolume";
@@ -185,66 +145,6 @@ export namespace GG {
             this.syncIsStopEffect();
         }
 
-        //#region 弃用方法
-        /**
-         * @deprecated
-         * 请使用 syncIsStopAudio 代替
-         */
-        static get isStopAudio(): boolean {
-            if (!this._initAudio) {
-                this._initAudio = true;
-                this._isStopAudio = GameData.getIsStopAudio();
-            }
-            return this._isStopAudio;
-        }
-
-        /**
-         * @deprecated
-         * 请使用 stopAudio 代替
-         */
-        static set isStopAudio(value: boolean) {
-            this._isStopAudio = value;
-            GameData.setIsStopAudio(value);
-            GAudio.setIsStop(value);
-        }
-
-        /**
-         * @deprecated
-         * 请使用 syncIsStopBgm 代替
-         */
-        static get isStopBgm(): boolean {
-            return GameData.getIsStopBgm();
-        }
-
-        /**
-         * @deprecated
-         * 请使用 stopBgm 代替
-         */
-        static set isStopBgm(value: boolean) {
-            GameData.setIsStopBgm(value);
-            GAudio.setIsStopBgm(value);
-        }
-
-        /**
-         * @deprecated
-         * 请使用 syncIsStopEffect 代替
-         */
-        static get isStopEffect(): boolean {
-            const isStopEffect = GameData.getIsStopEffect();
-            GameData.setIsStopEffect(isStopEffect);
-            GAudio.setIsStopEffect(isStopEffect);
-            return isStopEffect;
-        }
-
-        /**
-         * @deprecated
-         * 请使用 stopEffect 代替
-         */
-        static set isStopEffect(value: boolean) {
-            GameData.setIsStopEffect(value);
-            GAudio.setIsStopEffect(value);
-        }
-        //#endregion
         /**
          * 手动添加多语言图片,有LangSprite操作要在方法之后
          * @param nodes 节点数组
