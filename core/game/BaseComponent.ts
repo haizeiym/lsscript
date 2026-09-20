@@ -130,7 +130,7 @@ export class BaseComponent extends Component {
         this._clearUI();
     }
 
-    public addExtraChild(child: BaseComponent) {
+    public addExtraChild(child: BaseComponent): BaseComponent {
         this._extraChilds ??= [];
         const index = this._extraChilds.indexOf(child);
         if (index !== -1) {
@@ -139,6 +139,7 @@ export class BaseComponent extends Component {
         } else {
             this._extraChilds.push(child);
         }
+        return child;
     }
 
     public NodeDestroy() {
