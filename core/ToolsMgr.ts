@@ -93,44 +93,20 @@ export namespace Tools {
     };
 
     /**
-     * 精确保留 precision 位小数，向零截断（不四舍五入）。
-     * 为避免 number 二进制误差，请优先传十进制字符串。
+     * 精确保留 precision 位小数，向零截断（不四舍五入，末尾补齐 0）。
+     * @example floatPrecisionExact(350.0238) => "350.02", floatPrecisionExact(350) => "350.00"
      */
     export const floatPrecisionExact = (value: string | number, precision: number = 2): string => {
-        if (!Number.isInteger(precision) || precision < 0) {
-            throw new Error("precision must be a non-negative integer");
-        }
-
-        if (typeof value === "number") {
-            if (!isFinite(value)) return String(value);
-            return new NBig(value.toPrecision(15)).round(precision, NBig.roundDown).toString();
-        }
-
-        const input = value.trim();
-        if (input.length === 0) return "0";
-        return new NBig(input).round(precision, NBig.roundDown).toString();
+        if (!isFinite(value as number)) return String(value ?? "0");
+        const str = typeof value === "number" ? value.toPrecision(15) : String(value).trim();
+        if (!str) return (0).toFixed(precision);
+        return new NBig(str).toFixed(precision, NBig.roundDown ?? 0);
     };
 
-    /** 保留 precision 位小数，向零截断（不四舍五入）。如需完全避免精度问题请用 floatPrecisionExact。 */
-    export const floatPrecision = (num: number, precision: number = 2): number => {
-        return floatPrecisionStable(num, precision);
+    /** 保留 precision 位小数，向零截断（返回 number）。 */
+    export const floatPrecision = (value: string | number, precision: number = 2): number => {
+        return Number(floatPrecisionExact(value, precision));
     };
 
-    /**
-     * 稳定地保留 precision 位小数，向零截断。
-     * 截断前先在 (precision + 6) 位上做四舍五入以清理浮点二进制误差，
-     * 避免如 0.9999999999999999 / 0.999999999999999 这类应当代表 1.0 的值
-     * 在 precision = 0 时被 roundDown 误判为 0。
-     * 对于真实的小数值（如 0.99、0.9999），仍会保持向零截断的语义。
-     */
-    export const floatPrecisionStable = (num: number, precision: number = 2): number => {
-        if (!isFinite(num)) return num;
-        const safePrecision = precision >= 0 ? precision : 0;
-        return Number(
-            new NBig(num.toPrecision(15))
-                .round(safePrecision + 6, NBig.roundHalfUp)
-                .round(precision, NBig.roundDown)
-                .toString()
-        );
-    };
+    export const floatPrecisionStable = floatPrecision;
 }
