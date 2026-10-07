@@ -1,7 +1,7 @@
 import { _decorator, Button, Component, instantiate, Node, Prefab, UIOpacity, UITransform } from "cc";
 import { DEBUG } from "cc/env";
 import { BindUI } from "../BindUI";
-import { Btn, BtnCallback } from "../BtnMgr";
+import { Btn, BtnCallback, BtnNode } from "../BtnMgr";
 import { Events } from "../EventMgr";
 import { NCountFn, NTime } from "../NMgr";
 import { ResLoad } from "../ResMgr";
@@ -24,6 +24,8 @@ export class BaseComponent extends Component {
     private _countFns: NCountFn[] = null;
 
     protected _extraChilds: BaseComponent[] = null;
+
+    private _isDestroyed: boolean = false;
 
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
@@ -96,15 +98,31 @@ export class BaseComponent extends Component {
         return opacity;
     }
 
+    protected _NodeT<T extends Component>(node: Node, comp: new () => T): T {
+        return (node.getComponent(comp) as T) || null;
+    }
+
     protected _addClick(node: Node | Button, callback: BtnCallback) {
         Btn.clickBtn(this, node, callback);
+    }
+
+    protected _blockBtn(btnNode: BtnNode | BtnNode[]) {
+        Btn.blockBtn(this, btnNode);
+    }
+
+    protected _unblockBtn(btnNode: BtnNode | BtnNode[]) {
+        Btn.unblockBtn(this, btnNode);
+    }
+
+    protected _unblockAllBtn() {
+        Btn.unblockAllBtn(this);
     }
 
     protected _addCommonClick(callback: BtnCallback) {
         Btn.setTargetBtnCallback(this, callback);
     }
 
-    protected _getCountFn(count: number, setEndCall?: () => void): NCountFn {
+    public getCountFn(count: number, setEndCall?: () => void): NCountFn {
         const countFn = new NCountFn(count);
         countFn.setEndCall(setEndCall);
         if (!this._countFns) this._countFns = [];
@@ -142,16 +160,39 @@ export class BaseComponent extends Component {
         return child;
     }
 
-    public NodeDestroy() {
-        if (this.isValid) {
+    public removeExtraChild(child: BaseComponent): boolean {
+        const list = this._extraChilds;
+        if (!list?.length) return false;
+        const index = list.indexOf(child);
+        if (index === -1) {
+            if (DEBUG) console.warn(`removeExtraChild: child not found`);
+            return false;
+        }
+        if (child.isValid) child.NodeDestroy();
+        const last = list.length - 1;
+        if (index !== last) list[index] = list[last];
+        list.pop();
+        return true;
+    }
+
+    protected onDestroy(): void {
+        if (this._isDestroyed) return;
+        this._isDestroyed = true;
+        this.resetComponent();
+        this._onDestroy();
+    }
+
+    public NodeDestroy(): void {
+        if (!this._isDestroyed && this.isValid) {
+            this._isDestroyed = true;
             this._destroyBefore();
             this.resetComponent();
-            this.destroy();
         }
-
         if (this.node?.isValid) {
             this.node.destroy();
+            return;
         }
+        if (this.isValid) this.destroy();
     }
 
     protected _clearExtraChilds() {
@@ -184,6 +225,8 @@ export class BaseComponent extends Component {
             this._setInit(args);
         }
     }
+
+    protected _onDestroy() {}
 
     protected _destroyBefore() {}
 
