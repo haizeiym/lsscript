@@ -25,7 +25,7 @@ export class BaseComponent extends Component {
 
     protected _extraChilds: BaseComponent[] = null;
 
-    private _isDestroyed: boolean = false;
+    private _isReseted: boolean = false;
 
     // _setInit --- onLoad --- start
     protected _setInit(parent: Node, beforeParentCall?: (arg?: any) => void): void {
@@ -176,15 +176,16 @@ export class BaseComponent extends Component {
     }
 
     protected onDestroy(): void {
-        if (this._isDestroyed) return;
-        this._isDestroyed = true;
-        this.resetComponent();
+        if (this._isReseted) {
+            this._isReseted = true;
+            this.resetComponent();
+        }
         this._onDestroy();
     }
 
     public NodeDestroy(): void {
-        if (!this._isDestroyed && this.isValid) {
-            this._isDestroyed = true;
+        if (!this._isReseted && this.isValid) {
+            this._isReseted = true;
             this._destroyBefore();
             this.resetComponent();
         }
