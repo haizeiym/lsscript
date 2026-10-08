@@ -176,7 +176,7 @@ export class BaseComponent extends Component {
     }
 
     protected onDestroy(): void {
-        if (this._isReseted) {
+        if (!this._isReseted) {
             this._isReseted = true;
             this.resetComponent();
         }
